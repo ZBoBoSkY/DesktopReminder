@@ -134,7 +134,7 @@ class ReminderApp(QApplication):
             self.panel.move(int(sp[0]), int(sp[1]))
         elif geo:
             self.panel.move(geo.right() - self.panel.width() - 24,
-                            geo.top() + 24)
+                            geo.top() + 10)
         ip = self.settings["icon_pos"]
         if ip:
             self.icon.move(int(ip[0]), int(ip[1]))

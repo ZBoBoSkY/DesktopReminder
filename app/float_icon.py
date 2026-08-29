@@ -6,7 +6,7 @@
 - 红色角标（右上）：已过期未处理的任务数
 - 倒计时文字绿色 = 有任务正在倒计时；不足1分钟变红色
 """
-from PySide6.QtCore import Qt, QPointF, QRectF, Signal
+from PySide6.QtCore import Qt, QPointF, QRectF, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QMenu, QWidget
 
@@ -35,6 +35,12 @@ class FloatIcon(QWidget):
         self._pressed = False
         self._moved = False
         self._drag_offset = None
+        # 微光呼吸效果
+        self._glow_phase = 0
+        self._glow_timer = QTimer(self)
+        self._glow_timer.setInterval(800)
+        self._glow_timer.timeout.connect(self._on_glow)
+        self._glow_timer.start()
         self._update_size()
         self.setToolTip("任务提醒")
         self.setCursor(Qt.PointingHandCursor)
@@ -63,6 +69,11 @@ class FloatIcon(QWidget):
             self._update_size()
         self.update()
 
+    def _on_glow(self):
+        """微光呼吸：切换发光相位。"""
+        self._glow_phase = (self._glow_phase + 1) % 2
+        self.update()
+
     # ---------- 绘制 ----------
     def paintEvent(self, e):
         p = QPainter(self)
@@ -82,6 +93,19 @@ class FloatIcon(QWidget):
         p.setPen(Qt.NoPen)
         p.drawRoundedRect(QRectF(body_x + 1, body_y + 2, body_w, body_h),
                           radius, radius)
+
+        # 微光呼吸层（有任务时显示，过期偏红，否则青蓝）
+        has_task = self._running_count > 0 or self._done_count > 0
+        if has_task:
+            glow_alpha = 50 if self._glow_phase == 0 else 25
+            if self._done_count > 0:
+                glow_color = QColor(248, 113, 113, glow_alpha)
+            else:
+                glow_color = QColor(34, 211, 238, glow_alpha)
+            p.setBrush(glow_color)
+            p.setPen(Qt.NoPen)
+            glow_rect = QRectF(body_x - 2, body_y - 2, body_w + 4, body_h + 4)
+            p.drawRoundedRect(glow_rect, radius + 2, radius + 2)
 
         # 胶囊背景（深蓝灰玻璃）
         bg_alpha = 240 if self._hover else 215

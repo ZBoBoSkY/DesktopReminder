@@ -30,16 +30,21 @@ QScrollBar::handle:vertical:hover { background: rgba(148,163,184,140); }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height:0; }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background:transparent; }
 
-QFrame#row { background: rgba(30,41,59,150); border-radius:12px; }
-QFrame#row:hover { background: rgba(51,65,85,170); }
+QFrame#row { background: rgba(30,41,59,150); border-radius:14px; }
+QFrame#row:hover { background: rgba(51,65,85,180); }
 QFrame#row[done="true"] { background: rgba(251,191,36,22); }
+QFrame#row[breath="on"] { background: rgba(251,191,36,38); }
+QFrame#row[breath="off"] { background: rgba(251,191,36,18); }
 
 QToolButton#opBtn { border:none; border-radius:10px; color:#94a3b8; font-size:13px; }
-QToolButton#opBtn:hover { color:#0f172a; background:#22d3ee; }
+QToolButton#opBtn:hover { color:#0f172a; background:qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #22d3ee, stop:1 #3b82f6); }
+QToolButton#opBtn:pressed { background:qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #0891b2, stop:1 #2563eb); }
 QToolButton#opBtn[done="true"] { color:#0f172a; background:#fbbf24; }
+QToolButton#opBtn[done="true"]:hover { background:#f59e0b; }
 
 QToolButton#headBtn { border:none; border-radius:8px; color:#94a3b8; font-size:14px; padding:3px 9px; }
-QToolButton#headBtn:hover { background: rgba(255,255,255,30); color:#f8fafc; }
+QToolButton#headBtn:hover { background:qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 rgba(34,211,238,40), stop:1 rgba(59,130,246,40)); color:#f8fafc; }
+QToolButton#headBtn:pressed { background:qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 rgba(34,211,238,60), stop:1 rgba(59,130,246,60)); }
 
 QLabel#title { font-size:13px; font-weight:600; color:#f8fafc; }
 QLabel#taskTitle { color:#e2e8f0; font-size:12px; }
@@ -95,7 +100,7 @@ class TaskRow(QFrame):
         # 左侧色条（3px，颜色随状态变化）
         self._stripe = QLabel()
         self._stripe.setFixedWidth(4)
-        self._stripe.setStyleSheet("background:#22d3ee; border-top-left-radius:12px; border-bottom-left-radius:12px;")
+        self._stripe.setStyleSheet("background:#22d3ee; border-top-left-radius:14px; border-bottom-left-radius:14px;")
         outer.addWidget(self._stripe)
 
         # 内容区
@@ -166,7 +171,7 @@ class TaskRow(QFrame):
 
         # 左侧色条
         self._stripe.setStyleSheet(
-            f"background:{color_hex}; border-top-left-radius:12px; border-bottom-left-radius:12px;")
+            f"background:{color_hex}; border-top-left-radius:14px; border-bottom-left-radius:14px;")
 
         if task.status == STATUS_RUNNING:
             rem = int(task.remaining_seconds(now))
@@ -208,6 +213,13 @@ class TaskRow(QFrame):
         self._ack.style().unpolish(self._ack)
         self._ack.style().polish(self._ack)
 
+    def set_breath(self, on):
+        """设置呼吸灯状态（仅对 done 状态的任务生效）。"""
+        if self._task.status == STATUS_DONE:
+            self.setProperty("breath", "on" if on else "off")
+            self.style().unpolish(self)
+            self.style().polish(self)
+
 
 class GlassPanel(QWidget):
     """玻璃主面板。"""
@@ -242,6 +254,12 @@ class GlassPanel(QWidget):
         self._pos_save_timer = QTimer(self)
         self._pos_save_timer.setSingleShot(True)
         self._pos_save_timer.timeout.connect(self._save_pos)
+        # 呼吸灯 timer：到点任务背景缓慢闪烁
+        self._breath_on = False
+        self._breath_timer = QTimer(self)
+        self._breath_timer.setInterval(1000)
+        self._breath_timer.timeout.connect(self._on_breath)
+        self._breath_timer.start()
         self._build()
         self.setFont(QFont("Microsoft YaHei UI", 9))
         self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -299,6 +317,12 @@ class GlassPanel(QWidget):
     def _save_pos(self):
         if self.app_ctx:
             self.app_ctx.save_panel_pos(self.pos())
+
+    def _on_breath(self):
+        """呼吸灯：切换所有到点任务的背景透明度。"""
+        self._breath_on = not self._breath_on
+        for row in self._rows.values():
+            row.set_breath(self._breath_on)
 
     # ---------- 界面 ----------
     def _build(self):
