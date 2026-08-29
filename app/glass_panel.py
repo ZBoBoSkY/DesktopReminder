@@ -6,8 +6,8 @@
 - 弱化态：opacity=配置值（约0.35），半透明
 鼠标移上 → panelActivated 信号；鼠标离开 → panelDeactivated 信号。
 """
-from PySide6.QtCore import (QEasingCurve, QPoint, QPropertyAnimation, Qt,
-                            QTimer, Signal)
+from PySide6.QtCore import (QEasingCurve, QPoint, QPointF, QPropertyAnimation,
+                            QRectF, Qt, QTimer, Signal)
 from PySide6.QtGui import (QBrush, QColor, QFont, QFontMetrics, QLinearGradient,
                            QPainter, QPen)
 from PySide6.QtWidgets import (QFrame, QGraphicsOpacityEffect, QHBoxLayout,
