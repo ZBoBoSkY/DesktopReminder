@@ -6,9 +6,10 @@
 - 弱化态：opacity=配置值（约0.35），半透明
 鼠标移上 → panelActivated 信号；鼠标离开 → panelDeactivated 信号。
 """
-from PySide6.QtCore import (QEasingCurve, QPropertyAnimation, Qt, QTimer,
-                            Signal)
-from PySide6.QtGui import QColor, QFont, QFontMetrics
+from PySide6.QtCore import (QEasingCurve, QPoint, QPropertyAnimation, Qt,
+                            QTimer, Signal)
+from PySide6.QtGui import (QBrush, QColor, QFont, QFontMetrics, QLinearGradient,
+                           QPainter, QPen)
 from PySide6.QtWidgets import (QFrame, QGraphicsOpacityEffect, QHBoxLayout,
                                QLabel, QMenu, QProgressBar, QPushButton,
                                QScrollArea, QSizeGrip, QSizePolicy,
@@ -55,6 +56,15 @@ QMenu { background:#1e293b; color:#e2e8f0; border:1px solid rgba(148,163,184,50)
 QMenu::item { padding:6px 20px; border-radius:5px; }
 QMenu::item:selected { background:#22d3ee; color:#0f172a; }
 QMenu::separator { height:1px; background: rgba(148,163,184,40); margin:5px 10px; }
+
+QFrame#card {
+    border-top: 1px solid rgba(255,255,255,55);
+    border-left: 1px solid rgba(255,255,255,25);
+    border-right: 1px solid rgba(255,255,255,12);
+    border-bottom: 1px solid rgba(255,255,255,8);
+    border-radius: 14px;
+    background: transparent;
+}
 """
 
 SNOOZE_OPTIONS = [(5, "5 分钟后"), (10, "10 分钟后"),
@@ -78,6 +88,157 @@ def _status_color(task, now):
             return SOON       # 即将到期：橙色
         return RUNNING        # 进行中：青色
     return DONE               # 已完成待检查：琥珀色
+
+
+class TitleBar(QWidget):
+    """标题栏拖拽热区：整个标题栏（除按钮外）都可拖拽窗口。"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._drag_pos = None
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            self._drag_pos = (e.globalPosition().toPoint()
+                              - self.window().frameGeometry().topLeft())
+            self.window().raise_()
+            self.window().activateWindow()
+
+    def mouseMoveEvent(self, e):
+        if self._drag_pos is not None and (e.buttons() & Qt.LeftButton):
+            self.window().move(e.globalPosition().toPoint() - self._drag_pos)
+
+    def mouseReleaseEvent(self, e):
+        self._drag_pos = None
+
+
+class AlarmIcon(QWidget):
+    """矢量绘制的闹钟图标（青→蓝渐变，跟应用图标同风格）。"""
+
+    def __init__(self, size=56, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.TextAntialiasing)
+        w = self.width()
+        h = self.height()
+        cx = w / 2.0
+        cy = h / 2.0 + 2
+        radius = w * 0.30
+
+        # 青→蓝渐变
+        grad = QLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius)
+        grad.setColorAt(0.0, QColor(34, 211, 238))
+        grad.setColorAt(1.0, QColor(59, 130, 246))
+
+        # 顶部铃铛（左右）
+        p.setBrush(QBrush(grad))
+        p.setPen(Qt.NoPen)
+        bell_w = radius * 0.35
+        bell_h = radius * 0.25
+        p.drawEllipse(QPointF(cx - radius * 0.75, cy - radius * 0.85), bell_w, bell_h)
+        p.drawEllipse(QPointF(cx + radius * 0.75, cy - radius * 0.85), bell_w, bell_h)
+
+        # 底部支架
+        p.setBrush(QBrush(grad))
+        p.drawRoundedRect(QRectF(cx - radius * 0.3, cy + radius * 0.85,
+                                 radius * 0.6, radius * 0.18), 2, 2)
+
+        # 表盘背景（深色）
+        p.setBrush(QColor(15, 23, 42, 200))
+        p.setPen(QPen(QBrush(grad), 2.5))
+        p.drawEllipse(QPointF(cx, cy), radius, radius)
+
+        # 时针
+        p.setPen(QPen(QColor(226, 232, 240), 2.0, Qt.SolidLine, Qt.RoundCap))
+        p.drawLine(QPointF(cx, cy), QPointF(cx - radius * 0.3, cy - radius * 0.15))
+        # 分针
+        p.setPen(QPen(QColor(34, 211, 238), 2.0, Qt.SolidLine, Qt.RoundCap))
+        p.drawLine(QPointF(cx, cy), QPointF(cx + radius * 0.15, cy - radius * 0.45))
+        # 中心点
+        p.setBrush(QColor(34, 211, 238))
+        p.setPen(Qt.NoPen)
+        p.drawEllipse(QPointF(cx, cy), 2.0, 2.0)
+
+        p.end()
+
+
+class DeletedRow(QFrame):
+    """回收站任务条目：淡化显示 + 恢复/永久删除按钮。"""
+
+    def __init__(self, task, on_restore, on_permanent_delete):
+        super().__init__()
+        self.setObjectName("row")
+        self._task = task
+        self._on_restore = on_restore
+        self._on_permanent_delete = on_permanent_delete
+        self.setStyleSheet("background: rgba(100,116,139,40); border-radius:10px;")
+
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        # 左侧灰色色条
+        stripe = QLabel()
+        stripe.setFixedWidth(4)
+        stripe.setStyleSheet("background:#64748b; border-top-left-radius:10px; border-bottom-left-radius:10px;")
+        outer.addWidget(stripe)
+
+        content = QHBoxLayout()
+        content.setContentsMargins(10, 8, 10, 8)
+        content.setSpacing(8)
+
+        title = QLabel(task.title)
+        title.setStyleSheet("color:#94a3b8; font-size:12px; text-decoration:line-through;")
+        title.setWordWrap(True)
+        title.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+        # 删除时间
+        if task.deleted_at:
+            mins = int((_now_local() - task.deleted_at).total_seconds() // 60)
+            if mins < 60:
+                time_text = f"{mins}分钟前删除"
+            else:
+                hours = mins // 60
+                time_text = f"{hours}小时前删除"
+        else:
+            time_text = ""
+        time_label = QLabel(time_text)
+        time_label.setStyleSheet("color:#64748b; font-size:10px;")
+        time_label.setFixedWidth(80)
+        time_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        btn_restore = QToolButton()
+        btn_restore.setText("↩")
+        btn_restore.setFixedSize(22, 22)
+        btn_restore.setToolTip("恢复任务")
+        btn_restore.setStyleSheet(
+            "QToolButton{border:none;border-radius:8px;color:#94a3b8;font-size:13px;}"
+            "QToolButton:hover{background:#22d3ee;color:#0f172a;}")
+        btn_restore.clicked.connect(lambda: self._on_restore(self._task.id))
+
+        btn_delete = QToolButton()
+        btn_delete.setText("×")
+        btn_delete.setFixedSize(22, 22)
+        btn_delete.setToolTip("永久删除")
+        btn_delete.setStyleSheet(
+            "QToolButton{border:none;border-radius:8px;color:#94a3b8;font-size:14px;}"
+            "QToolButton:hover{background:#f87171;color:#fff;}")
+        btn_delete.clicked.connect(lambda: self._on_permanent_delete(self._task.id))
+
+        content.addWidget(title, 1)
+        content.addWidget(time_label)
+        content.addWidget(btn_restore)
+        content.addWidget(btn_delete)
+        outer.addLayout(content, 1)
+
+
+def _now_local():
+    from datetime import datetime
+    return datetime.now()
 
 
 class TaskRow(QFrame):
@@ -239,6 +400,8 @@ class GlassPanel(QWidget):
     ackTask = Signal(str)
     snoozeTask = Signal(str, int)
     removeTask = Signal(str)
+    restoreTask = Signal(str)
+    permanentDeleteTask = Signal(str)
     collapseToIcon = Signal()
     minimizeToTray = Signal()
     panelActivated = Signal()     # 鼠标移上
@@ -347,8 +510,10 @@ class GlassPanel(QWidget):
         card.setSpacing(6)
         root.addWidget(self._card, 1)
 
-        # 标题栏
-        head = QHBoxLayout()
+        # 标题栏（整个区域可拖拽）
+        self._title_bar = TitleBar()
+        head = QHBoxLayout(self._title_bar)
+        head.setContentsMargins(0, 0, 0, 0)
         head.setSpacing(6)
         t = QLabel("⚡ 桌面轻提醒")
         t.setObjectName("title")
@@ -372,7 +537,7 @@ class GlassPanel(QWidget):
         head.addWidget(b_add)
         head.addWidget(b_min)
         head.addWidget(b_close)
-        card.addLayout(head)
+        card.addWidget(self._title_bar)
 
         # 任务列表
         self._scroll = QScrollArea()
@@ -387,23 +552,71 @@ class GlassPanel(QWidget):
         self._scroll.setWidget(self._task_host)
         card.addWidget(self._scroll, 1)
 
-        # 空状态（大图标+引导文字）
+        # 空状态（矢量闹钟图标+引导文字）
         self._empty = QWidget()
         empty_layout = QVBoxLayout(self._empty)
         empty_layout.setAlignment(Qt.AlignCenter)
-        empty_layout.setSpacing(10)
-        empty_layout.setContentsMargins(20, 30, 20, 30)
-        empty_icon = QLabel("⏰")
-        empty_icon.setAlignment(Qt.AlignCenter)
-        empty_icon.setStyleSheet("font-size:40px; background:transparent;")
+        empty_layout.setSpacing(12)
+        empty_layout.setContentsMargins(20, 24, 20, 24)
+        empty_icon = AlarmIcon(size=56)
         empty_text = QLabel("还没有任务\n点右上角 + 添加一条会自己跑完的工作")
         empty_text.setAlignment(Qt.AlignCenter)
         empty_text.setObjectName("empty")
         empty_text.setWordWrap(True)
-        empty_layout.addWidget(empty_icon)
+        empty_layout.addWidget(empty_icon, 0, Qt.AlignCenter)
         empty_layout.addWidget(empty_text)
         self._empty.setVisible(False)
         card.addWidget(self._empty)
+
+        # 回收站区域（可折叠）
+        self._deleted_expanded = False
+        self._deleted_rows = {}
+        self._deleted_widget = QWidget()
+        deleted_layout = QVBoxLayout(self._deleted_widget)
+        deleted_layout.setContentsMargins(0, 0, 0, 0)
+        deleted_layout.setSpacing(4)
+
+        # 回收站标题栏（点击展开/折叠）
+        self._deleted_header = QFrame()
+        self._deleted_header.setCursor(Qt.PointingHandCursor)
+        header_layout = QHBoxLayout(self._deleted_header)
+        header_layout.setContentsMargins(8, 4, 8, 4)
+        header_layout.setSpacing(6)
+        self._deleted_arrow = QLabel("▸")
+        self._deleted_arrow.setStyleSheet("color:#64748b; font-size:11px;")
+        self._deleted_arrow.setFixedWidth(14)
+        self._deleted_title = QLabel("🗑 已删除")
+        self._deleted_title.setStyleSheet("color:#64748b; font-size:11px;")
+        self._deleted_count = QLabel("(0)")
+        self._deleted_count.setStyleSheet("color:#64748b; font-size:11px;")
+        header_layout.addWidget(self._deleted_arrow)
+        header_layout.addWidget(self._deleted_title)
+        header_layout.addWidget(self._deleted_count)
+        header_layout.addStretch(1)
+        self._deleted_header.mousePressEvent = self._toggle_deleted
+        deleted_layout.addWidget(self._deleted_header)
+
+        # 回收站任务列表
+        self._deleted_list = QWidget()
+        self._deleted_list_layout = QVBoxLayout(self._deleted_list)
+        self._deleted_list_layout.setContentsMargins(0, 0, 0, 0)
+        self._deleted_list_layout.setSpacing(4)
+        self._deleted_list_layout.addStretch(1)
+        self._deleted_list.setVisible(False)
+        deleted_layout.addWidget(self._deleted_list)
+
+        # 清空回收站按钮
+        self._clear_deleted_btn = QPushButton("清空回收站")
+        self._clear_deleted_btn.setStyleSheet(
+            "QPushButton{background:transparent;color:#64748b;border:1px solid rgba(100,116,139,60);"
+            "border-radius:6px;padding:3px 8px;font-size:10px;}"
+            "QPushButton:hover{background:rgba(248,113,113,20);color:#f87171;border-color:rgba(248,113,113,100);}")
+        self._clear_deleted_btn.setVisible(False)
+        self._clear_deleted_btn.clicked.connect(self._clear_all_deleted)
+        deleted_layout.addWidget(self._clear_deleted_btn)
+
+        self._deleted_widget.setVisible(False)
+        card.addWidget(self._deleted_widget)
 
         # 右下角调整大小手柄
         grip_row = QHBoxLayout()
@@ -412,6 +625,50 @@ class GlassPanel(QWidget):
         self._grip.setFixedSize(10, 10)
         grip_row.addWidget(self._grip)
         root.addLayout(grip_row)
+
+    def _toggle_deleted(self, e):
+        """切换回收站展开/折叠。"""
+        self._deleted_expanded = not self._deleted_expanded
+        self._deleted_list.setVisible(self._deleted_expanded)
+        self._clear_deleted_btn.setVisible(self._deleted_expanded and len(self._deleted_rows) > 0)
+        self._deleted_arrow.setText("▾" if self._deleted_expanded else "▸")
+        if not self._user_resized:
+            self.auto_height()
+
+    def _clear_all_deleted(self):
+        """清空回收站（发送信号给控制器）。"""
+        for tid in list(self._deleted_rows.keys()):
+            self.permanentDeleteTask.emit(tid)
+
+    def _on_restore(self, tid):
+        self.restoreTask.emit(tid)
+
+    def _on_permanent_delete(self, tid):
+        self.permanentDeleteTask.emit(tid)
+
+    def refresh_deleted(self, deleted_tasks):
+        """刷新回收站任务列表。"""
+        has_deleted = len(deleted_tasks) > 0
+        self._deleted_widget.setVisible(has_deleted)
+        self._deleted_count.setText(f"({len(deleted_tasks)})")
+
+        ids = {t.id for t in deleted_tasks}
+        for tid in list(self._deleted_rows):
+            if tid not in ids:
+                row = self._deleted_rows.pop(tid)
+                self._deleted_list_layout.removeWidget(row)
+                row.deleteLater()
+        for t in deleted_tasks:
+            if t.id not in self._deleted_rows:
+                row = DeletedRow(t, self._on_restore, self._on_permanent_delete)
+                self._deleted_rows[t.id] = row
+                self._deleted_list_layout.insertWidget(
+                    self._deleted_list_layout.count() - 1, row)
+
+        self._clear_deleted_btn.setVisible(
+            self._deleted_expanded and len(self._deleted_rows) > 0)
+        if not self._user_resized:
+            self.auto_height()
 
     def _panel_menu(self, pos):
         if not self.app_ctx:
@@ -438,10 +695,10 @@ class GlassPanel(QWidget):
         menu.exec(self.mapToGlobal(pos))
 
     # ---------- 数据刷新 ----------
-    def refresh(self, tasks, now):
+    def refresh(self, tasks, now, deleted_tasks=None):
         active = [t for t in tasks if t.status != "ack"]
         has = len(active) > 0
-        self._empty.setVisible(not has)
+        self._empty.setVisible(not has and not (deleted_tasks and len(deleted_tasks) > 0))
         self._scroll.setVisible(has)
         ids = {t.id for t in active}
         for tid in list(self._rows):
@@ -458,6 +715,8 @@ class GlassPanel(QWidget):
                 self._rows[t.id] = row
                 self._task_layout.insertWidget(
                     self._task_layout.count() - 1, row)
+        # 刷新回收站
+        self.refresh_deleted(deleted_tasks or [])
         if not self._user_resized:
             self.auto_height()
 
@@ -488,6 +747,17 @@ class GlassPanel(QWidget):
         self._opacity_anim.setEndValue(float(target))
         self._opacity_anim.setEasingCurve(QEasingCurve.OutCubic)
         self._opacity_anim.start()
+
+    def animate_pos(self, target_pos, duration=300):
+        """位置弹性动画（OutBack 缓动，有轻微过冲效果）。"""
+        if not hasattr(self, '_pos_anim') or self._pos_anim is None:
+            self._pos_anim = QPropertyAnimation(self, b"pos")
+        self._pos_anim.stop()
+        self._pos_anim.setDuration(duration)
+        self._pos_anim.setStartValue(self.pos())
+        self._pos_anim.setEndValue(target_pos)
+        self._pos_anim.setEasingCurve(QEasingCurve.OutBack)
+        self._pos_anim.start()
 
     def _on_ack(self, tid):
         self.ackTask.emit(tid)

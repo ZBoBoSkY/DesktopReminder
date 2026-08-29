@@ -15,7 +15,7 @@ import sys
 import winsound
 from datetime import datetime
 
-from PySide6.QtCore import QSharedMemory, QTimer
+from PySide6.QtCore import QSharedMemory, Qt, QTimer
 from PySide6.QtWidgets import (QApplication, QMessageBox, QSystemTrayIcon)
 
 from app import tray as tray_mod
@@ -108,6 +108,8 @@ class ReminderApp(QApplication):
         self.panel.ackTask.connect(self.ack_task)
         self.panel.snoozeTask.connect(self.snooze_task)
         self.panel.removeTask.connect(self.remove_task)
+        self.panel.restoreTask.connect(self.restore_task)
+        self.panel.permanentDeleteTask.connect(self.permanent_delete_task)
         self.panel.collapseToIcon.connect(self.collapse_to_icon)
         self.panel.minimizeToTray.connect(self.minimize_to_tray)
         self.panel.panelActivated.connect(self._on_panel_activated)
@@ -147,23 +149,29 @@ class ReminderApp(QApplication):
         return max(0.1, min(0.9, int(self.settings["opacity_percent"]) / 100.0))
 
     def show_active(self):
-        """显示面板并设为激活态（不透明），带淡入动画。"""
+        """显示面板并设为激活态（不透明），带弹性弹入动画。"""
         self._stop_idle_timers()
         self._periodic_timer.stop()
         self.icon.hide()
+        target_pos = self.panel.pos()
         self.panel.set_opacity(0.0)
+        self.panel.move(target_pos.x(), target_pos.y() + 14)
         self.panel.show()
-        self.panel.animate_opacity(1.0, 250)
+        self.panel.animate_pos(target_pos, 320)
+        self.panel.animate_opacity(1.0, 280)
         self.panel.toggle()
         self.mode = MODE_ACTIVE
 
     def show_dim(self):
-        """显示面板并设为弱化态（半透明），带淡入动画，开始闲置计时。"""
+        """显示面板并设为弱化态（半透明），带弹性弹入动画，开始闲置计时。"""
         self._stop_idle_timers()
         self.icon.hide()
+        target_pos = self.panel.pos()
         self.panel.set_opacity(0.0)
+        self.panel.move(target_pos.x(), target_pos.y() + 14)
         self.panel.show()
-        self.panel.animate_opacity(self._dim_opacity(), 250)
+        self.panel.animate_pos(target_pos, 320)
+        self.panel.animate_opacity(self._dim_opacity(), 280)
         self.mode = MODE_DIM
         # 弱化态下，鼠标离开后 dim_to_icon_秒 收图标
         self._dim_timer.start(int(self.settings["dim_to_icon_seconds"]) * 1000)
@@ -257,7 +265,7 @@ class ReminderApp(QApplication):
             now, int(self.settings["escalation_interval_minutes"]))
         for ev in events:
             self._handle_event(ev)
-        self.panel.refresh(self.task_mgr.tasks, now)
+        self.panel.refresh(self.task_mgr.tasks, now, self.task_mgr.deleted_tasks)
 
         # 更新图标：颜色角标 + 倒计时标签
         running = [t for t in self.task_mgr.tasks
@@ -312,6 +320,14 @@ class ReminderApp(QApplication):
 
     def remove_task(self, tid):
         self.task_mgr.remove(tid)
+
+    def restore_task(self, tid):
+        """从回收站恢复任务。"""
+        self.task_mgr.restore(tid)
+
+    def permanent_delete_task(self, tid):
+        """永久删除任务（从回收站彻底移除）。"""
+        self.task_mgr.permanent_delete(tid)
 
     # ==================== 对话框 ====================
     def open_add_dialog(self):
@@ -431,6 +447,9 @@ def run_selftest():
 def main():
     if "--selftest" in sys.argv:
         return run_selftest()
+    # 高 DPI 适配：确保高分屏（2K/4K+缩放）上正确缩放
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     shm = QSharedMemory("DesktopReminderSingleton_v1")
     if not shm.create(1):
         QMessageBox.information(None, APP_NAME, "桌面轻提醒已经在运行了")

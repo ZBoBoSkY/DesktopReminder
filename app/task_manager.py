@@ -2,6 +2,7 @@
 """任务模型与计时逻辑。
 
 任务三态：running(计时中) -> done(预计已完成，等待确认) -> ack(已确认，归档)
+回收站：删除的任务先进入 deleted_tasks，可恢复或永久删除。
 """
 import uuid
 from datetime import datetime, timedelta
@@ -10,6 +11,9 @@ STATUS_RUNNING = "running"
 STATUS_DONE = "done"
 STATUS_ACK = "ack"
 
+# 回收站保留时间（天）
+DELETED_RETENTION_DAYS = 7
+
 
 def _now():
     return datetime.now()
@@ -17,7 +21,8 @@ def _now():
 
 class Task:
     def __init__(self, title, duration_seconds, created_at=None, tid=None,
-                 status=STATUS_RUNNING, completion_at=None, last_notified=None):
+                 status=STATUS_RUNNING, completion_at=None, last_notified=None,
+                 deleted_at=None):
         self.id = tid or uuid.uuid4().hex[:10]
         self.title = (title or "").strip()
         self.duration_seconds = max(1, int(duration_seconds))
@@ -25,6 +30,7 @@ class Task:
         self.status = status
         self.completion_at = completion_at
         self.last_notified = last_notified
+        self.deleted_at = deleted_at
 
     @property
     def due_at(self):
@@ -49,6 +55,7 @@ class Task:
             "status": self.status,
             "completion_at": self.completion_at.isoformat() if self.completion_at else None,
             "last_notified": self.last_notified.isoformat() if self.last_notified else None,
+            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
         }
 
     @classmethod
@@ -66,26 +73,35 @@ class Task:
             status=d.get("status", STATUS_RUNNING),
             completion_at=_dt(d.get("completion_at")),
             last_notified=_dt(d.get("last_notified")),
+            deleted_at=_dt(d.get("deleted_at")),
         )
 
 
 class TaskManager:
     def __init__(self, save_cb=None):
         self.tasks = []
+        self.deleted_tasks = []
         self.save_cb = save_cb
 
     def load(self, raw_list):
         self.tasks = []
+        self.deleted_tasks = []
         for d in (raw_list or []):
             try:
                 t = Task.from_dict(d)
             except Exception:
                 continue
+            if t.deleted_at is not None:
+                # 回收站任务：超过保留期则丢弃
+                if t.deleted_at < _now() - timedelta(days=DELETED_RETENTION_DAYS):
+                    continue
+                self.deleted_tasks.append(t)
+                continue
             if t.status == STATUS_ACK:
-                continue                      # 已确认的不再载入
+                continue
             if (t.status == STATUS_DONE and t.completion_at
                     and t.completion_at < _now() - timedelta(hours=24)):
-                continue                      # 超过一天的旧完成记录丢弃
+                continue
             self.tasks.append(t)
         for t in self.tasks:
             if t.status == STATUS_DONE and t.completion_at is None:
@@ -121,7 +137,39 @@ class TaskManager:
         return False
 
     def remove(self, tid):
-        self.tasks = [t for t in self.tasks if t.id != tid]
+        """移到回收站（不直接删除）。"""
+        for i, t in enumerate(self.tasks):
+            if t.id == tid:
+                t.deleted_at = _now()
+                self.deleted_tasks.append(t)
+                self.tasks.pop(i)
+                self._save()
+                return True
+        return False
+
+    def restore(self, tid):
+        """从回收站恢复任务。"""
+        for i, t in enumerate(self.deleted_tasks):
+            if t.id == tid:
+                t.deleted_at = None
+                self.tasks.append(t)
+                self.deleted_tasks.pop(i)
+                self._save()
+                return True
+        return False
+
+    def permanent_delete(self, tid):
+        """永久删除（从回收站彻底移除）。"""
+        for i, t in enumerate(self.deleted_tasks):
+            if t.id == tid:
+                self.deleted_tasks.pop(i)
+                self._save()
+                return True
+        return False
+
+    def clear_deleted(self):
+        """清空回收站。"""
+        self.deleted_tasks = []
         self._save()
 
     def unacked_done(self):
@@ -136,8 +184,9 @@ class TaskManager:
 
     def _save(self):
         if self.save_cb:
-            self.save_cb([t.to_dict() for t in self.tasks
-                          if t.status != STATUS_ACK])
+            all_tasks = [t for t in self.tasks if t.status != STATUS_ACK]
+            all_tasks.extend(self.deleted_tasks)
+            self.save_cb([t.to_dict() for t in all_tasks])
 
     def tick(self, now=None, escalation_minutes=10):
         """推进任务状态，返回需要提醒的事件列表。
