@@ -91,25 +91,13 @@ def _status_color(task, now):
 
 
 class TitleBar(QWidget):
-    """标题栏拖拽热区：整个标题栏（除按钮外）都可拖拽窗口。"""
+    """标题栏容器：固定高度，整个区域可拖拽（拖拽逻辑在父控件判断）。"""
+
+    HEIGHT = 32
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._drag_pos = None
-
-    def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
-            self._drag_pos = (e.globalPosition().toPoint()
-                              - self.window().frameGeometry().topLeft())
-            self.window().raise_()
-            self.window().activateWindow()
-
-    def mouseMoveEvent(self, e):
-        if self._drag_pos is not None and (e.buttons() & Qt.LeftButton):
-            self.window().move(e.globalPosition().toPoint() - self._drag_pos)
-
-    def mouseReleaseEvent(self, e):
-        self._drag_pos = None
+        self.setFixedHeight(self.HEIGHT)
 
 
 class AlarmIcon(QWidget):
@@ -471,10 +459,12 @@ class GlassPanel(QWidget):
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
-            self._drag_pos = (e.globalPosition().toPoint()
-                              - self.frameGeometry().topLeft())
-            self.raise_()
-            self.activateWindow()
+            # 只在标题栏区域允许拖拽（顶部边距6 + card边距4 + 标题栏高度32 = 42）
+            if e.pos().y() <= 42:
+                self._drag_pos = (e.globalPosition().toPoint()
+                                  - self.frameGeometry().topLeft())
+                self.raise_()
+                self.activateWindow()
 
     def mouseMoveEvent(self, e):
         if self._drag_pos is not None and (e.buttons() & Qt.LeftButton):
