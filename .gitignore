@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.spec.bak
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 运行时配置（含用户任务数据，不提交）
+config.json
+*.local.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志
+*.log
+build_log.txt
+
+# 临时脚本输出
+scripts/*.png
+scripts/*.jpg
