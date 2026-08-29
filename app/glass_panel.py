@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""玻璃主面板：始终置顶、半透明玻璃效果、任务列表、可调整大小。
+"""玻璃主面板 v2：深蓝灰玻璃、左侧色条、等宽时间、渐变进度条。
 
 状态由控制器控制：
 - 激活态：opacity=1.0，完全不透明
@@ -15,34 +15,41 @@ from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QMenu,
                                QVBoxLayout, QWidget)
 
 from .task_manager import STATUS_DONE, STATUS_RUNNING
-from .theme import ACCENT, WARN
+from .theme import (ACCENT, ACCENT_END, BG, DONE, EXPIRED, RUNNING, SOON,
+                    SUCCESS, TEXT, TEXT_BRIGHT, TEXT_DIM, WARN)
 from .winutil import enable_acrylic, force_foreground
 
 QSS = """
-QWidget { color: #ebf0f8; font-family: "Microsoft YaHei UI"; }
-QToolTip { background:#10141c; color:#e8eef7; border:1px solid rgba(255,255,255,40); padding:4px 8px; }
+QWidget { color: #f1f5f9; font-family: "Microsoft YaHei UI"; }
+QToolTip { background:#0f172a; color:#e2e8f0; border:1px solid rgba(148,163,184,60); border-radius:6px; padding:5px 10px; }
 QScrollArea { border:none; background:transparent; }
 QScrollArea > QWidget > QWidget { background:transparent; }
 QScrollBar:vertical { background:transparent; width:6px; margin:0; }
-QScrollBar::handle:vertical { background: rgba(255,255,255,60); border-radius:3px; min-height:24px; }
+QScrollBar::handle:vertical { background: rgba(148,163,184,80); border-radius:3px; min-height:24px; }
+QScrollBar::handle:vertical:hover { background: rgba(148,163,184,140); }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height:0; }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background:transparent; }
-QFrame#row { background: rgba(255,255,255,14); border-radius:10px; }
-QFrame#row:hover { background: rgba(255,255,255,22); }
-QFrame#row[done="true"] { background: rgba(251,191,36,20); }
-QToolButton#opBtn { border:none; border-radius:9px; color:#b9c6da; font-size:12px; }
-QToolButton#opBtn:hover { color:#0b0f16; background:#22d3ee; }
-QToolButton#opBtn[done="true"] { color:#0b0f16; background:#fbbf24; }
-QToolButton#headBtn { border:none; border-radius:6px; color:#9fb0c8; font-size:13px; padding:2px 8px; }
-QToolButton#headBtn:hover { background: rgba(255,255,255,26); color:#fff; }
-QLabel#title { font-size:13px; font-weight:600; color:#f2f6fc; }
-QLabel#taskTitle { color:#e8eef7; font-size:12px; }
-QLabel#timeLabel { color:#dbe6f5; font-size:12px; }
-QLabel#empty { font-size:11px; color:#7d8aa0; }
-QMenu { background:#141a26; color:#e8eef7; border:1px solid rgba(255,255,255,40); border-radius:6px; padding:4px; }
-QMenu::item { padding:5px 18px; border-radius:4px; }
-QMenu::item:selected { background:#22d3ee; color:#0b0f16; }
-QMenu::separator { height:1px; background: rgba(255,255,255,26); margin:4px 8px; }
+
+QFrame#row { background: rgba(30,41,59,150); border-radius:12px; }
+QFrame#row:hover { background: rgba(51,65,85,170); }
+QFrame#row[done="true"] { background: rgba(251,191,36,22); }
+
+QToolButton#opBtn { border:none; border-radius:10px; color:#94a3b8; font-size:13px; }
+QToolButton#opBtn:hover { color:#0f172a; background:#22d3ee; }
+QToolButton#opBtn[done="true"] { color:#0f172a; background:#fbbf24; }
+
+QToolButton#headBtn { border:none; border-radius:8px; color:#94a3b8; font-size:14px; padding:3px 9px; }
+QToolButton#headBtn:hover { background: rgba(255,255,255,30); color:#f8fafc; }
+
+QLabel#title { font-size:13px; font-weight:600; color:#f8fafc; }
+QLabel#taskTitle { color:#e2e8f0; font-size:12px; }
+QLabel#timeLabel { color:#f8fafc; font-size:13px; font-family:"Consolas","Courier New",monospace; font-weight:600; }
+QLabel#empty { font-size:11px; color:#64748b; }
+
+QMenu { background:#1e293b; color:#e2e8f0; border:1px solid rgba(148,163,184,50); border-radius:8px; padding:5px; }
+QMenu::item { padding:6px 20px; border-radius:5px; }
+QMenu::item:selected { background:#22d3ee; color:#0f172a; }
+QMenu::separator { height:1px; background: rgba(148,163,184,40); margin:5px 10px; }
 """
 
 SNOOZE_OPTIONS = [(5, "5 分钟后"), (10, "10 分钟后"),
@@ -55,11 +62,21 @@ def _fmt(seconds):
     m, s = divmod(m, 60)
     if h:
         return f"{h}:{m:02d}:{s:02d}"
-    return f"{m}:{s:02d}"
+    return f"{m:02d}:{s:02d}"
+
+
+def _status_color(task, now):
+    """根据任务状态和剩余时间返回对应的颜色。"""
+    if task.status == STATUS_RUNNING:
+        rem = int(task.remaining_seconds(now))
+        if rem <= 60:
+            return SOON       # 即将到期：橙色
+        return RUNNING        # 进行中：青色
+    return DONE               # 已完成待检查：琥珀色
 
 
 class TaskRow(QFrame):
-    """单条任务：状态点 + 名称(自动换行) + 时间 + 进度条 + ✓/⏱ 按钮。"""
+    """单条任务：左侧色条 + 名称(自动换行) + 等宽时间 + 渐变进度条 + ✓/⏱ 按钮。"""
 
     def __init__(self, task, now, on_ack, on_snooze, on_remove):
         super().__init__()
@@ -71,32 +88,44 @@ class TaskRow(QFrame):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
 
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(10, 7, 8, 8)
-        outer.setSpacing(5)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        # 左侧色条（3px，颜色随状态变化）
+        self._stripe = QLabel()
+        self._stripe.setFixedWidth(4)
+        self._stripe.setStyleSheet("background:#22d3ee; border-top-left-radius:12px; border-bottom-left-radius:12px;")
+        outer.addWidget(self._stripe)
+
+        # 内容区
+        content = QVBoxLayout()
+        content.setContentsMargins(10, 8, 10, 8)
+        content.setSpacing(5)
+        outer.addLayout(content, 1)
 
         top = QHBoxLayout()
         top.setSpacing(8)
         self._dot = QLabel()
-        self._dot.setFixedSize(8, 8)
+        self._dot.setFixedSize(7, 7)
         self._title = QLabel()
         self._title.setObjectName("taskTitle")
         self._title.setWordWrap(True)
         self._title.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self._time = QLabel()
         self._time.setObjectName("timeLabel")
-        self._time.setFixedWidth(88)
+        self._time.setFixedWidth(92)
         self._time.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self._ack = QToolButton()
         self._ack.setObjectName("opBtn")
         self._ack.setText("✓")
-        self._ack.setFixedSize(22, 22)
+        self._ack.setFixedSize(24, 24)
         self._ack.setToolTip("确认已完成")
         self._ack.clicked.connect(lambda: self._on_ack(self._task.id))
         self._snooze = QToolButton()
         self._snooze.setObjectName("opBtn")
         self._snooze.setText("⏱")
-        self._snooze.setFixedSize(22, 22)
+        self._snooze.setFixedSize(24, 24)
         self._snooze.setToolTip("稍后提醒")
         self._snooze.clicked.connect(self._snooze_menu)
         top.addWidget(self._dot)
@@ -104,13 +133,14 @@ class TaskRow(QFrame):
         top.addWidget(self._time)
         top.addWidget(self._ack)
         top.addWidget(self._snooze)
-        outer.addLayout(top)
+        content.addLayout(top)
 
+        # 渐变进度条（5px，发光效果）
         self._bar = QProgressBar()
-        self._bar.setFixedHeight(3)
+        self._bar.setFixedHeight(5)
         self._bar.setTextVisible(False)
         self._bar.setRange(0, 100)
-        outer.addWidget(self._bar)
+        content.addWidget(self._bar)
 
         self.update_task(task, now)
 
@@ -131,26 +161,44 @@ class TaskRow(QFrame):
     def update_task(self, task, now):
         self._task = task
         self._title.setText(task.title)
+        color = _status_color(task, now)
+        color_hex = color.name()
+
+        # 左侧色条
+        self._stripe.setStyleSheet(
+            f"background:{color_hex}; border-top-left-radius:12px; border-bottom-left-radius:12px;")
+
         if task.status == STATUS_RUNNING:
             rem = int(task.remaining_seconds(now))
             self._time.setText(_fmt(rem))
-            self._time.setStyleSheet("color:#dbe6f5; font-size:12px;")
-            self._dot.setStyleSheet(f"background:{ACCENT.name()}; border-radius:4px;")
+            # 时间颜色：即将到期变橙色，否则亮白
+            if rem <= 60:
+                self._time.setStyleSheet("color:#fb923c; font-size:13px; font-family:Consolas,Courier New,monospace; font-weight:700;")
+            else:
+                self._time.setStyleSheet("color:#f8fafc; font-size:13px; font-family:Consolas,Courier New,monospace; font-weight:600;")
+            self._dot.setStyleSheet(f"background:{color_hex}; border-radius:3px;")
             pct = int(task.remaining_seconds(now) / task.duration_seconds * 100)
             self._bar.setValue(pct)
             self._bar.setVisible(True)
-            color = WARN.name() if rem <= 60 else ACCENT.name()
+            # 渐变进度条 + 发光：正常青→蓝，紧急橙→红
+            if rem <= 60:
+                grad = "qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #fb923c, stop:1 #f87171)"
+                glow = "rgba(251,146,60,50)"
+            else:
+                grad = "qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #22d3ee, stop:1 #3b82f6)"
+                glow = "rgba(34,211,238,40)"
             self._bar.setStyleSheet(
-                "QProgressBar{background:rgba(255,255,255,18); border:none; border-radius:1px;}"
-                f"QProgressBar::chunk{{background:{color}; border-radius:1px;}}")
+                "QProgressBar{background:rgba(148,163,184,25); border:none; border-radius:2px;}"
+                f"QProgressBar::chunk{{background:{grad}; border-radius:2px;}}"
+            )
             self.setProperty("done", "false")
             self._ack.setProperty("done", "false")
             self._ack.setToolTip("确认已完成")
         else:
             mins = task.done_minutes(now)
             self._time.setText(f"已完成{mins}分")
-            self._time.setStyleSheet("color:#fbbf24; font-size:12px;")
-            self._dot.setStyleSheet("background:#fbbf24; border-radius:4px;")
+            self._time.setStyleSheet("color:#fbbf24; font-size:12px; font-family:Consolas,Courier New,monospace; font-weight:600;")
+            self._dot.setStyleSheet("background:#fbbf24; border-radius:3px;")
             self._bar.setVisible(False)
             self.setProperty("done", "true")
             self._ack.setProperty("done", "true")
@@ -203,7 +251,7 @@ class GlassPanel(QWidget):
     def showEvent(self, e):
         super().showEvent(e)
         if not self._acrylic:
-            enable_acrylic(self.winId(), tint_alpha=110, dark=True)
+            enable_acrylic(self.winId(), tint_alpha=100, dark=True)
             self._acrylic = True
 
     def enterEvent(self, e):
@@ -260,7 +308,7 @@ class GlassPanel(QWidget):
         self._card = QFrame(self)
         self._card.setObjectName("card")
         card = QVBoxLayout(self._card)
-        card.setContentsMargins(6, 4, 6, 2)
+        card.setContentsMargins(8, 6, 8, 4)
         card.setSpacing(6)
         root.addWidget(self._card, 1)
 
@@ -374,7 +422,7 @@ class GlassPanel(QWidget):
             screen = self.app_ctx.primaryScreen() if self.app_ctx else None
             max_h = int(screen.availableGeometry().height() * 0.6) if screen else 600
             task_count = len(self._rows)
-            ideal = 50 + task_count * 62 + 50
+            ideal = 50 + task_count * 66 + 40
             ideal = max(self.MIN_HEIGHT, min(ideal, max_h))
             self.resize(self.width(), ideal)
         finally:
