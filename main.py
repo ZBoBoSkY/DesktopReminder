@@ -147,21 +147,23 @@ class ReminderApp(QApplication):
         return max(0.1, min(0.9, int(self.settings["opacity_percent"]) / 100.0))
 
     def show_active(self):
-        """显示面板并设为激活态（不透明）。"""
+        """显示面板并设为激活态（不透明），带淡入动画。"""
         self._stop_idle_timers()
         self._periodic_timer.stop()
         self.icon.hide()
+        self.panel.set_opacity(0.0)
         self.panel.show()
-        self.panel.animate_opacity(1.0)
+        self.panel.animate_opacity(1.0, 250)
         self.panel.toggle()
         self.mode = MODE_ACTIVE
 
     def show_dim(self):
-        """显示面板并设为弱化态（半透明），开始闲置计时。"""
+        """显示面板并设为弱化态（半透明），带淡入动画，开始闲置计时。"""
         self._stop_idle_timers()
         self.icon.hide()
+        self.panel.set_opacity(0.0)
         self.panel.show()
-        self.panel.animate_opacity(self._dim_opacity())
+        self.panel.animate_opacity(self._dim_opacity(), 250)
         self.mode = MODE_DIM
         # 弱化态下，鼠标离开后 dim_to_icon_秒 收图标
         self._dim_timer.start(int(self.settings["dim_to_icon_seconds"]) * 1000)

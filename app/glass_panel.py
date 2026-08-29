@@ -9,10 +9,10 @@
 from PySide6.QtCore import (QEasingCurve, QPropertyAnimation, Qt, QTimer,
                             Signal)
 from PySide6.QtGui import QColor, QFont, QFontMetrics
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QMenu,
-                               QProgressBar, QPushButton, QScrollArea,
-                               QSizeGrip, QSizePolicy, QToolButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QFrame, QGraphicsOpacityEffect, QHBoxLayout,
+                               QLabel, QMenu, QProgressBar, QPushButton,
+                               QScrollArea, QSizeGrip, QSizePolicy,
+                               QToolButton, QVBoxLayout, QWidget)
 
 from .task_manager import STATUS_DONE, STATUS_RUNNING
 from .theme import (ACCENT, ACCENT_END, BG, DONE, EXPIRED, RUNNING, SOON,
@@ -149,6 +149,17 @@ class TaskRow(QFrame):
 
         self.update_task(task, now)
 
+        # 淡入动画
+        self._opacity_effect = QGraphicsOpacityEffect(self)
+        self._opacity_effect.setOpacity(0.0)
+        self.setGraphicsEffect(self._opacity_effect)
+        self._fade_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
+        self._fade_anim.setDuration(300)
+        self._fade_anim.setStartValue(0.0)
+        self._fade_anim.setEndValue(1.0)
+        self._fade_anim.setEasingCurve(QEasingCurve.OutCubic)
+        self._fade_anim.start()
+
     def _snooze_menu(self):
         menu = QMenu(self)
         for minutes, label in SNOOZE_OPTIONS:
@@ -269,7 +280,7 @@ class GlassPanel(QWidget):
     def showEvent(self, e):
         super().showEvent(e)
         if not self._acrylic:
-            enable_acrylic(self.winId(), tint_alpha=100, dark=True)
+            enable_acrylic(self.winId(), tint_alpha=130, dark=True)
             self._acrylic = True
 
     def enterEvent(self, e):
@@ -327,12 +338,12 @@ class GlassPanel(QWidget):
     # ---------- 界面 ----------
     def _build(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(10, 10, 10, 4)
+        root.setContentsMargins(6, 6, 6, 2)
         root.setSpacing(0)
         self._card = QFrame(self)
         self._card.setObjectName("card")
         card = QVBoxLayout(self._card)
-        card.setContentsMargins(8, 6, 8, 4)
+        card.setContentsMargins(6, 4, 6, 2)
         card.setSpacing(6)
         root.addWidget(self._card, 1)
 
@@ -371,15 +382,26 @@ class GlassPanel(QWidget):
         self._task_host = QWidget()
         self._task_layout = QVBoxLayout(self._task_host)
         self._task_layout.setContentsMargins(0, 0, 4, 0)
-        self._task_layout.setSpacing(6)
+        self._task_layout.setSpacing(4)
         self._task_layout.addStretch(1)
         self._scroll.setWidget(self._task_host)
         card.addWidget(self._scroll, 1)
 
-        # 空状态
-        self._empty = QLabel("还没有任务。\n点右上角 + 添加一条会自己跑完的工作。")
-        self._empty.setObjectName("empty")
-        self._empty.setAlignment(Qt.AlignCenter)
+        # 空状态（大图标+引导文字）
+        self._empty = QWidget()
+        empty_layout = QVBoxLayout(self._empty)
+        empty_layout.setAlignment(Qt.AlignCenter)
+        empty_layout.setSpacing(10)
+        empty_layout.setContentsMargins(20, 30, 20, 30)
+        empty_icon = QLabel("⏰")
+        empty_icon.setAlignment(Qt.AlignCenter)
+        empty_icon.setStyleSheet("font-size:40px; background:transparent;")
+        empty_text = QLabel("还没有任务\n点右上角 + 添加一条会自己跑完的工作")
+        empty_text.setAlignment(Qt.AlignCenter)
+        empty_text.setObjectName("empty")
+        empty_text.setWordWrap(True)
+        empty_layout.addWidget(empty_icon)
+        empty_layout.addWidget(empty_text)
         self._empty.setVisible(False)
         card.addWidget(self._empty)
 
@@ -387,7 +409,7 @@ class GlassPanel(QWidget):
         grip_row = QHBoxLayout()
         grip_row.addStretch(1)
         self._grip = QSizeGrip(self)
-        self._grip.setFixedSize(14, 14)
+        self._grip.setFixedSize(10, 10)
         grip_row.addWidget(self._grip)
         root.addLayout(grip_row)
 
@@ -446,7 +468,7 @@ class GlassPanel(QWidget):
             screen = self.app_ctx.primaryScreen() if self.app_ctx else None
             max_h = int(screen.availableGeometry().height() * 0.6) if screen else 600
             task_count = len(self._rows)
-            ideal = 50 + task_count * 66 + 40
+            ideal = 38 + task_count * 58 + 12
             ideal = max(self.MIN_HEIGHT, min(ideal, max_h))
             self.resize(self.width(), ideal)
         finally:
