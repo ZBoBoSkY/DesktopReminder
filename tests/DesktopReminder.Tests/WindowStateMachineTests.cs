@@ -1,3 +1,4 @@
+using System.Windows;
 using DesktopReminder.Core.StateMachine;
 using DesktopReminder.Domain.Models;
 
@@ -105,6 +106,18 @@ public class WindowStateMachineTests
         sm.Evaluate(Now.AddMinutes(10).AddSeconds(30)); // 无交互 → Icon
 
         Assert.Equal(WindowState.Icon, sm.CurrentState);
+    }
+
+    [Fact]
+    public void CollapseToIcon_Immediate_RegardlessOfTimeout()
+    {
+        var sm = new WindowStateMachine(Settings());
+        sm.RegisterInteraction(Now);
+
+        sm.CollapseToIcon(Now.AddSeconds(1)); // 刚交互 1 秒也直接收起
+
+        Assert.Equal(WindowState.Icon, sm.CurrentState);
+        Assert.Equal(WindowState.Icon, sm.Evaluate(Now.AddSeconds(2))); // 不被超时逻辑拉回
     }
 
     [Fact]

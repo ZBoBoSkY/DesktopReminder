@@ -1,9 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\DesktopReminder.Infrastructure\DesktopReminder.Infrastructure.csproj" />
     <ProjectReference Include="..\DesktopReminder.Domain\DesktopReminder.Domain.csproj" />
     <ProjectReference Include="..\DesktopReminder.Core\DesktopReminder.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -12,6 +16,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>DesktopReminder</AssemblyName>
+    <RootNamespace>DesktopReminder.App</RootNamespace>
+    <Version>0.3.0</Version>
+    <Product>桌面轻提醒</Product>
   </PropertyGroup>
 
 </Project>

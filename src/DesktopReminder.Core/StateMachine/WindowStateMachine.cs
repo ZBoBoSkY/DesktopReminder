@@ -46,6 +46,14 @@ public sealed class WindowStateMachine
         TransitionTo(WindowState.Glass, now);
     }
 
+    /// <summary>用户主动收起为图标（点「－」或关闭按钮），立即生效不走超时</summary>
+    public void CollapseToIcon(DateTime now)
+    {
+        _reminderBurstEnd = DateTime.MinValue;
+        _lastInteraction = now - _settings.GlassTimeout - _settings.IconTimeout - TimeSpan.FromSeconds(1);
+        TransitionTo(WindowState.Icon, now);
+    }
+
     /// <summary>
     /// 计算并应用当前应处状态。返回目标状态（可能与当前相同）。
     /// 每次调用会推进计时判断；无操作超时到点即切换。

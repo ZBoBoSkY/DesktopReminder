@@ -1,0 +1,29 @@
+<views:ThemeWindow x:Class="DesktopReminder.App.Views.IconWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:DesktopReminder.App.Views"
+        Title="桌面轻提醒"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        Width="52" Height="52"
+        MouseLeftButtonDown="IconWindow_MouseLeftButtonDown"
+        MouseMove="IconWindow_MouseMove"
+        MouseLeftButtonUp="IconWindow_MouseLeftButtonUp"
+        MouseRightButtonUp="IconWindow_MouseRightButtonUp">
+
+    <views:ThemeWindow.Resources>
+        <ContextMenu x:Key="IconMenu">
+            <MenuItem Header="显示主界面" Click="Menu_ShowMain"/>
+            <MenuItem Header="新建任务" Click="Menu_AddTask"/>
+            <Separator/>
+            <MenuItem Header="设置" Click="Menu_Settings"/>
+            <MenuItem Header="关于" Click="Menu_About"/>
+            <Separator/>
+            <MenuItem Header="退出" Click="Menu_Exit"/>
+        </ContextMenu>
+    </views:ThemeWindow.Resources>
+
+    <!-- 位图由 AppIconFactory 渲染（矢量绘制，缩放不失真） -->
+    <Image x:Name="IconImage" IsHitTestVisible="False"
+           Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+</views:ThemeWindow>
