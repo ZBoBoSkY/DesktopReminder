@@ -1,5 +1,8 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using DesktopReminder.App.Themes;
 
@@ -25,7 +28,7 @@ public partial class IconWindow : ThemeWindow
     public event Action? RequestExit;
 
     private bool _dragging;
-    private Point _dragStart;
+    private Point _dragScreenStart;
     private Point _winStart;
     private bool _moved;
 
@@ -35,33 +38,47 @@ public partial class IconWindow : ThemeWindow
     }
 
     /// <summary>
+    /// 出现动画（WPF Window 禁止设置 RenderTransform，用快速淡入实现柔和的材质到达感）。
+    /// </summary>
+    private void IconWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        Opacity = 0;
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, duration) { EasingFunction = ease });
+    }
+
+    /// <summary>
     /// 刷新图标内容（App 每秒调用）。
     /// 有任务 → 圆形 + 右侧标签（按文本宽度动态调整窗口宽）；无任务 → 纯圆形。
+    /// 拖拽期间完全跳过刷新（窗口移动中改尺寸/内容会与鼠标坐标系互相干扰 → 晃动）。
     /// </summary>
     public void Refresh(string? countdownText, int badgeCount, bool hasOverdue)
     {
+        if (_dragging)
+        {
+            return; // 拖拽中保持完全静止；松手后下一个心跳自然恢复
+        }
+
         var visual = new System.Windows.Media.DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            AppIconFactory.DrawIcon(dc, countdownText, badgeCount, hasOverdue, CircleSize, ThemeManager.Current);
+            AppIconFactory.DrawIcon(dc, countdownText, badgeCount, hasOverdue,
+                CircleSize, Width, Height, ThemeManager.Current);
         }
 
-        // 计算标签宽度（若有），决定窗口尺寸。
-        // 拖拽期间冻结尺寸：窗口在移动中改 Width/Height 会让鼠标坐标系漂移 → 图标晃动（本轮修复）
-        if (!_dragging)
+        // 计算标签宽度（若有），决定窗口尺寸
+        double width = CircleSize + WindowMargin * 2;
+        if (!string.IsNullOrEmpty(countdownText))
         {
-            double width = CircleSize + WindowMargin * 2;
-            if (!string.IsNullOrEmpty(countdownText))
-            {
-                var tf = new FormattedText(
-                    countdownText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                    new Typeface("Microsoft YaHei"), CircleSize * 0.26, System.Windows.Media.Brushes.Black, 1.25);
-                width += tf.Width + 6 + 16 + 4;
-            }
-
-            Width = Math.Max(width, CircleSize + WindowMargin * 2);
-            Height = CircleSize + WindowMargin * 2;
+            var tf = new FormattedText(
+                countdownText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                new Typeface("Microsoft YaHei"), CircleSize * 0.26, System.Windows.Media.Brushes.Black, 1.25);
+            width += tf.Width + 6 + 16 + 4;
         }
+
+        Width = Math.Max(width, CircleSize + WindowMargin * 2);
+        Height = CircleSize + WindowMargin * 2;
 
         IconImage.Source = AppIconFactory.Render(visual, (int)Width, (int)Height);
         IconImage.Width = Width;
@@ -72,8 +89,9 @@ public partial class IconWindow : ThemeWindow
     {
         _dragging = true;
         _moved = false;
-        _dragStart = e.GetPosition(this);
         _winStart = new Point(Left, Top);
+        GetCursorPos(out var pt);
+        _dragScreenStart = new Point(pt.X, pt.Y);
         CaptureMouse();
         e.Handled = true;
     }
@@ -85,10 +103,14 @@ public partial class IconWindow : ThemeWindow
             return;
         }
 
-        var pos = e.GetPosition(this);
-        Left = _winStart.X + pos.X - _dragStart.X;
-        Top = _winStart.Y + pos.Y - _dragStart.Y;
-        if (Math.Abs(pos.X - _dragStart.X) > 3 || Math.Abs(pos.Y - _dragStart.Y) > 3)
+        // 用屏幕物理坐标计算位移（GetCursorPos），再按 DPI 换算成 WPF 坐标。
+        // 旧版用相对窗口坐标：窗口一动，相对坐标跟着漂移，形成正反馈 → 图标来回晃动。
+        GetCursorPos(out var pt);
+        var scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        Left = _winStart.X + (pt.X - _dragScreenStart.X) / scale;
+        Top = _winStart.Y + (pt.Y - _dragScreenStart.Y) / scale;
+
+        if (Math.Abs(pt.X - _dragScreenStart.X) > 3 || Math.Abs(pt.Y - _dragScreenStart.Y) > 3)
         {
             _moved = true;
         }
@@ -122,4 +144,14 @@ public partial class IconWindow : ThemeWindow
     private void Menu_Settings(object sender, RoutedEventArgs e) => RequestOpenSettings?.Invoke();
     private void Menu_About(object sender, RoutedEventArgs e) => RequestOpenAbout?.Invoke();
     private void Menu_Exit(object sender, RoutedEventArgs e) => RequestExit?.Invoke();
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
 }

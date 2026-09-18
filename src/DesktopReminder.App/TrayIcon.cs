@@ -95,7 +95,7 @@ public sealed class TrayIcon : IDisposable
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            AppIconFactory.DrawIcon(dc, countdownText: null, badgeCount, hasOverdue, 32, ThemeManager.Current);
+            AppIconFactory.DrawIcon(dc, countdownText: null, badgeCount, hasOverdue, 32, 32, 32, ThemeManager.Current);
         }
 
         var bitmap = AppIconFactory.Render(visual, 32, 32);

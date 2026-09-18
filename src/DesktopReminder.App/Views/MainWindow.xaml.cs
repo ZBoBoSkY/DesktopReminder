@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using DesktopReminder.App.ViewModels;
 using DesktopReminder.App.WindowsApi;
 
@@ -27,6 +28,16 @@ public partial class MainWindow : ThemeWindow
     {
         InitializeComponent();
         DataContext = viewModel;
+        Loaded += MainWindow_Loaded;
+    }
+
+    /// <summary>出现动画（WPF Window 禁止设置 RenderTransform，用淡入实现柔和的材质到达感）</summary>
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        Opacity = 0;
+        var duration = TimeSpan.FromMilliseconds(240);
+        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, duration) { EasingFunction = ease });
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)

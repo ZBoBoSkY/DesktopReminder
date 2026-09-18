@@ -28,29 +28,34 @@ public sealed class ThemeColors
     public Brush Active => new SolidColorBrush(ActiveColor);
     public Brush Hover => new SolidColorBrush(HoverColor);
 
+    /// <summary>
+    /// Apple 风格系统色（浅/深两套，来自 iOS/macOS 系统调色板）：
+    /// - 卡片使用 94% 半透明材质，桌面透出一点点 → 玻璃感（苹果「材质」原则）
+    /// - Accent 用系统蓝，状态色用系统绿/红，色相有据可依
+    /// </summary>
     public static ThemeColors Light { get; } = new()
     {
-        BackgroundColor = Color.FromRgb(0xF5, 0xF6, 0xF8),
-        SurfaceColor = Color.FromRgb(0xFF, 0xFF, 0xFF),
-        ForegroundColor = Color.FromRgb(0x1F, 0x29, 0x37),
-        SecondaryTextColor = Color.FromRgb(0x64, 0x6B, 0x78),
-        BorderColor = Color.FromRgb(0xE5, 0xE7, 0xEB),
-        AccentColor = Color.FromRgb(0x0E, 0x93, 0xB5),
-        DueColor = Color.FromRgb(0xDC, 0x26, 0x26),
-        ActiveColor = Color.FromRgb(0x16, 0xA3, 0x4A),
-        HoverColor = Color.FromArgb(0x0F, 0x00, 0x00, 0x00),
+        BackgroundColor = Color.FromRgb(0xF2, 0xF2, 0xF7), // iOS 系统灰
+        SurfaceColor = Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF), // 94% 白（玻璃卡片）
+        ForegroundColor = Color.FromRgb(0x1C, 0x1C, 0x1E), // iOS 主文本
+        SecondaryTextColor = Color.FromRgb(0x8E, 0x8E, 0x93), // iOS 次要文本
+        BorderColor = Color.FromRgb(0xE5, 0xE5, 0xEA), // iOS 分隔线
+        AccentColor = Color.FromRgb(0x00, 0x7A, 0xFF), // Apple 蓝
+        DueColor = Color.FromRgb(0xFF, 0x3B, 0x30), // Apple 红
+        ActiveColor = Color.FromRgb(0x34, 0xC7, 0x59), // Apple 绿
+        HoverColor = Color.FromArgb(0x12, 0x00, 0x00, 0x00),
     };
 
     public static ThemeColors Dark { get; } = new()
     {
-        BackgroundColor = Color.FromRgb(0x20, 0x21, 0x24),
-        SurfaceColor = Color.FromRgb(0x2B, 0x2C, 0x30),
-        ForegroundColor = Color.FromRgb(0xF0, 0xF1, 0xF3),
-        SecondaryTextColor = Color.FromRgb(0x9A, 0xA1, 0xAB),
-        BorderColor = Color.FromRgb(0x3E, 0x40, 0x46),
-        AccentColor = Color.FromRgb(0x3B, 0xD6, 0xF2),
-        DueColor = Color.FromRgb(0xFF, 0x6B, 0x6B),
-        ActiveColor = Color.FromRgb(0x4A, 0xDE, 0x80),
+        BackgroundColor = Color.FromRgb(0x1C, 0x1C, 0x1E), // iOS 深色系统灰
+        SurfaceColor = Color.FromArgb(0xF0, 0x2C, 0x2C, 0x2E), // 94% 深灰（玻璃卡片）
+        ForegroundColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // iOS 深色主文本
+        SecondaryTextColor = Color.FromRgb(0x98, 0x98, 0x9F), // iOS 深色次要文本
+        BorderColor = Color.FromRgb(0x38, 0x38, 0x3A), // iOS 深色分隔线
+        AccentColor = Color.FromRgb(0x0A, 0x84, 0xFF), // Apple 深色蓝
+        DueColor = Color.FromRgb(0xFF, 0x45, 0x3A), // Apple 深色红
+        ActiveColor = Color.FromRgb(0x30, 0xD1, 0x58), // Apple 深色绿
         HoverColor = Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF),
     };
 }
