@@ -40,6 +40,7 @@ public sealed class SettingsViewModel : ObservableObject
         _autoStart = settings.AutoStart;
 
         SaveCommand = new RelayCommand(_ => SaveAndClose?.Invoke());
+        ApplyCommand = new RelayCommand(_ => Save());
         CancelCommand = new RelayCommand(_ => Cancel?.Invoke());
     }
 
@@ -55,6 +56,7 @@ public sealed class SettingsViewModel : ObservableObject
     public bool AutoStart { get => _autoStart; set => SetProperty(ref _autoStart, value); }
 
     public RelayCommand SaveCommand { get; }
+    public RelayCommand ApplyCommand { get; }
     public RelayCommand CancelCommand { get; }
 
     public event Action? SaveAndClose;

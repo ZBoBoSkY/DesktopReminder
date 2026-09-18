@@ -21,6 +21,7 @@
     <RootNamespace>DesktopReminder.App</RootNamespace>
     <Version>0.3.0</Version>
     <Product>桌面轻提醒</Product>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

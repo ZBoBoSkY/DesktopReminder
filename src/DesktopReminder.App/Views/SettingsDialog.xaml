@@ -3,53 +3,176 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:DesktopReminder.App.Views"
         Title="设置" WindowStartupLocation="CenterScreen"
-        SizeToContent="Height" Width="400" ResizeMode="NoResize"
+        Width="440" SizeToContent="Height" ResizeMode="NoResize"
         Background="{DynamicResource ThemeBackground}"
         Foreground="{DynamicResource ThemeForeground}">
 
     <views:ThemeWindow.Resources>
         <Style x:Key="Label" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="Foreground" Value="{DynamicResource ThemeSecondaryText}"/>
-            <Setter Property="Margin" Value="0,10,0,2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
         </Style>
         <Style x:Key="NumBox" TargetType="TextBox">
-            <Setter Property="Width" Value="64"/>
-            <Setter Property="Padding" Value="4,3"/>
+            <Setter Property="Width" Value="76"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="6,3"/>
             <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="{DynamicResource ThemeSurface}"/>
             <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
+
+        <!-- 深色 ComboBox：完整模板覆盖默认白底弹出面板 -->
+        <Style x:Key="DarkComboBox" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}"/>
+            <Setter Property="Background" Value="{DynamicResource ThemeSurface}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton Focusable="False" Background="{TemplateBinding Background}"
+                                         BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                         IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                         ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="28"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Grid.Column="0" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                   Content="{TemplateBinding ContentControl.Content}"
+                                                   ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"/>
+                                                <Path Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      Data="M 0 0 L 4 4 L 8 0 Z" Fill="{DynamicResource ThemeSecondaryText}"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True"
+                                   Placement="Bottom" Focusable="False" PopupAnimation="Fade">
+                                <Border Background="{DynamicResource ThemeSurface}" BorderBrush="{DynamicResource ThemeBorder}"
+                                        BorderThickness="1" CornerRadius="6" MinWidth="{TemplateBinding ActualWidth}"
+                                        Margin="0,2,0,0">
+                                    <ScrollViewer Margin="4">
+                                        <StackPanel IsItemsHost="True"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}"/>
+                        <Setter Property="Padding" Value="10,6"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border x:Name="bd" Background="Transparent" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ThemeHover}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ThemeAccent}"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </views:ThemeWindow.Resources>
 
-    <StackPanel Margin="18,16,18,16">
+    <StackPanel Margin="20,18,20,18">
         <TextBlock Text="设置" FontSize="16" FontWeight="Bold"
-                   Foreground="{DynamicResource ThemeForeground}"/>
+                   Foreground="{DynamicResource ThemeForeground}" Margin="0,0,0,10"/>
 
-        <TextBlock Style="{StaticResource Label}" Text="清晰 → 半透明 无操作超时（分钟）"/>
-        <StackPanel Orientation="Horizontal">
-            <TextBox Style="{StaticResource NumBox}" Text="{Binding GlassMinutes, UpdateSourceTrigger=PropertyChanged}"/>
-        </StackPanel>
+        <!-- 每一行：标签 + 输入框同一行左对齐 -->
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Label}" Grid.Column="0"
+                       Text="清晰 → 半透明 无操作超时（分钟）"/>
+            <TextBox Style="{StaticResource NumBox}" Grid.Column="1"
+                     Text="{Binding GlassMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
 
-        <TextBlock Style="{StaticResource Label}" Text="半透明 → 图标 无操作超时（秒）"/>
-        <TextBox Style="{StaticResource NumBox}" Text="{Binding IconSeconds, UpdateSourceTrigger=PropertyChanged}"/>
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Label}" Grid.Column="0"
+                       Text="半透明 → 图标 无操作超时（秒）"/>
+            <TextBox Style="{StaticResource NumBox}" Grid.Column="1"
+                     Text="{Binding IconSeconds, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
 
-        <TextBlock Style="{StaticResource Label}" Text="半透明状态不透明度（%，5~90）"/>
-        <TextBox Style="{StaticResource NumBox}" Text="{Binding OpacityPercent, UpdateSourceTrigger=PropertyChanged}"/>
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Label}" Grid.Column="0"
+                       Text="半透明状态不透明度（%）"/>
+            <TextBox Style="{StaticResource NumBox}" Grid.Column="1"
+                     Text="{Binding OpacityPercent, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
 
-        <TextBlock Style="{StaticResource Label}" Text="过期任务重复提醒间隔（分钟）"/>
-        <TextBox Style="{StaticResource NumBox}" Text="{Binding RemindIntervalMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Label}" Grid.Column="0"
+                       Text="过期任务重复提醒间隔（分钟）"/>
+            <TextBox Style="{StaticResource NumBox}" Grid.Column="1"
+                     Text="{Binding RemindIntervalMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
 
-        <TextBlock Style="{StaticResource Label}" Text="新建任务默认时长（分钟）"/>
-        <TextBox Style="{StaticResource NumBox}" Text="{Binding DefaultMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Label}" Grid.Column="0"
+                       Text="新建任务默认时长（分钟）"/>
+            <TextBox Style="{StaticResource NumBox}" Grid.Column="1"
+                     Text="{Binding DefaultMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
 
-        <TextBlock Style="{StaticResource Label}" Text="主题"/>
-        <ComboBox Width="160" HorizontalAlignment="Left"
-                  Background="{DynamicResource ThemeSurface}" Foreground="{DynamicResource ThemeForeground}"
-                  BorderBrush="{DynamicResource ThemeBorder}"
-                  ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}"/>
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Label}" Grid.Column="0" Text="主题"/>
+            <ComboBox Style="{StaticResource DarkComboBox}" Grid.Column="1" Width="150"
+                      ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}"/>
+        </Grid>
 
         <CheckBox Content="声音提醒" Margin="0,12,0,0" Foreground="{DynamicResource ThemeForeground}"
                   IsChecked="{Binding SoundEnabled}"/>
@@ -61,6 +184,10 @@
                     Background="{DynamicResource ThemeSurface}" Foreground="{DynamicResource ThemeForeground}"
                     BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
                     Command="{Binding CancelCommand}"/>
+            <Button Content="应用" Width="76" Height="30" Margin="0,0,10,0"
+                    Background="{DynamicResource ThemeSurface}" Foreground="{DynamicResource ThemeForeground}"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                    Command="{Binding ApplyCommand}"/>
             <Button Content="保存" Width="76" Height="30"
                     Background="{DynamicResource ThemeAccent}" Foreground="White" BorderThickness="0"
                     Command="{Binding SaveCommand}"/>

@@ -43,7 +43,7 @@ public sealed class ThemeColors
         ForegroundColor = Color.FromRgb(0x1B, 0x1B, 0x1B), // 近黑主文本
         SecondaryTextColor = Color.FromRgb(0x8E, 0x8E, 0x93), // 次要文本
         BorderColor = Color.FromArgb(0x18, 0x00, 0x00, 0x00), // 极淡描边
-        AccentColor = Color.FromRgb(0xC8, 0x8A, 0x9A), // 灰玫瑰粉（浅色版稍深保证对比）
+        AccentColor = Color.FromRgb(0x58, 0x56, 0xD6), // 深靛蓝（用户选定蓝色系）
         DueColor = Color.FromRgb(0xE5, 0x55, 0x6B), // 柔和红
         ActiveColor = Color.FromRgb(0x66, 0xBB, 0x6A), // 柔和绿
         HoverColor = Color.FromArgb(0x12, 0x00, 0x00, 0x00),
@@ -57,7 +57,7 @@ public sealed class ThemeColors
         ForegroundColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // 白主文本
         SecondaryTextColor = Color.FromRgb(0x9E, 0x9E, 0x9E), // 次要文本
         BorderColor = Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF), // 极淡描边
-        AccentColor = Color.FromRgb(0xD9, 0xA8, 0xB3), // 灰玫瑰粉（FlClash 标志色）
+        AccentColor = Color.FromRgb(0x5E, 0x5C, 0xE6), // 深靛蓝（深色版）
         DueColor = Color.FromRgb(0xFF, 0x6B, 0x81), // 柔和红
         ActiveColor = Color.FromRgb(0x6F, 0xC8, 0x73), // 柔和绿
         HoverColor = Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF),

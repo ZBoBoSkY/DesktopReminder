@@ -110,7 +110,9 @@ public static class AppIconFactory
         return bitmap;
     }
 
-    /// <summary>BitmapSource → System.Drawing.Icon（供托盘 NotifyIcon 使用）</summary>
+    /// <summary>BitmapSource → System.Drawing.Icon（供托盘 NotifyIcon 使用）。
+    /// 采用 PNG 嵌入 ICO 的方式（Vista+ 原生支持，完整保留 alpha 透明通道，
+    /// 避免 GetHicon 丢透明导致托盘显示空白方块）。</summary>
     public static System.Drawing.Icon? ToIcon(BitmapSource source)
     {
         try
@@ -119,11 +121,25 @@ public static class AppIconFactory
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(source));
             encoder.Save(ms);
-            ms.Position = 0;
-            using var bmp = new System.Drawing.Bitmap(ms);
-            var hicon = bmp.GetHicon();
-            var icon = System.Drawing.Icon.FromHandle(hicon);
-            return icon;
+            var png = ms.ToArray();
+
+            // 包装成 ICO 文件格式（6 字节头 + 16 字节目录项 + PNG 数据）
+            using var icoMs = new MemoryStream();
+            using var w = new BinaryWriter(icoMs);
+            w.Write((ushort)0);            // reserved
+            w.Write((ushort)1);            // type: icon
+            w.Write((ushort)1);            // count: 1
+            w.Write((byte)64);             // width
+            w.Write((byte)64);             // height
+            w.Write((byte)0);               // palette
+            w.Write((byte)0);               // reserved
+            w.Write((ushort)1);             // planes
+            w.Write((ushort)32);            // bit count
+            w.Write((uint)png.Length);     // image size
+            w.Write((uint)22);             // image offset (6+16)
+            w.Write(png);
+            icoMs.Position = 0;
+            return new System.Drawing.Icon(icoMs);
         }
         catch
         {

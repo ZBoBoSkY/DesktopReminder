@@ -15,6 +15,7 @@ public abstract class ThemeWindow : Window
         ThemeManager.ThemeChanged += OnThemeChanged;
         Unloaded += (_, _) => ThemeManager.ThemeChanged -= OnThemeChanged;
         Loaded += (_, _) => ApplyTheme();
+        // 窗口图标由 csproj <ApplicationIcon>app.ico</ApplicationIcon> 统一提供（任务栏/Alt+Tab/标题栏）
     }
 
     private void OnThemeChanged(ThemeColors colors) => ApplyTheme();
