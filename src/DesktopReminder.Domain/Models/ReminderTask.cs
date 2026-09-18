@@ -68,4 +68,10 @@ public sealed class ReminderTask
         DueAt = now + Duration;
         CompletedAt = null;
     }
+
+    /// <summary>标记删除（软删除：进入已删除库，数据保留，可恢复）</summary>
+    public void MarkDeleted()
+    {
+        Status = ReminderTaskStatus.Deleted;
+    }
 }

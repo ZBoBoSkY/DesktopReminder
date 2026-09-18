@@ -15,7 +15,9 @@ public sealed class MainViewModel : ObservableObject
     private readonly ReminderCoordinator _coordinator;
     private readonly IAppNameProvider _appNameProvider;
     private bool _completedPanelVisible;
+    private bool _deletedPanelVisible;
     private bool _hasCompleted;
+    private bool _hasDeleted;
 
     public MainViewModel(ReminderCoordinator coordinator, IAppNameProvider appNameProvider)
     {
@@ -25,6 +27,7 @@ public sealed class MainViewModel : ObservableObject
         AddTaskCommand = new RelayCommand(_ => RequestAddTask?.Invoke());
         MinimizeToIconCommand = new RelayCommand(_ => RequestMinimizeToIcon?.Invoke());
         ToggleCompletedCommand = new RelayCommand(_ => ToggleCompletedPanel());
+        ToggleDeletedCommand = new RelayCommand(_ => ToggleDeletedPanel());
         OpenSettingsCommand = new RelayCommand(_ => RequestOpenSettings?.Invoke());
         OpenAboutCommand = new RelayCommand(_ => RequestOpenAbout?.Invoke());
         ExitCommand = new RelayCommand(_ => RequestExit?.Invoke());
@@ -45,6 +48,7 @@ public sealed class MainViewModel : ObservableObject
 
     public ObservableCollection<TaskItemViewModel> ActiveTasks { get; } = new();
     public ObservableCollection<TaskItemViewModel> CompletedTasks { get; } = new();
+    public ObservableCollection<TaskItemViewModel> DeletedTasks { get; } = new();
 
     public bool HasActiveTasks => ActiveTasks.Count > 0;
 
@@ -54,13 +58,13 @@ public sealed class MainViewModel : ObservableObject
     public bool CompletedPanelVisible
     {
         get => _completedPanelVisible;
-        private set
-        {
-            if (SetProperty(ref _completedPanelVisible, value))
-            {
-                OnPropertyChanged(nameof(CompletedPanelVisible));
-            }
-        }
+        private set => SetProperty(ref _completedPanelVisible, value);
+    }
+
+    public bool DeletedPanelVisible
+    {
+        get => _deletedPanelVisible;
+        private set => SetProperty(ref _deletedPanelVisible, value);
     }
 
     public bool HasCompleted
@@ -69,9 +73,16 @@ public sealed class MainViewModel : ObservableObject
         private set => SetProperty(ref _hasCompleted, value);
     }
 
+    public bool HasDeleted
+    {
+        get => _hasDeleted;
+        private set => SetProperty(ref _hasDeleted, value);
+    }
+
     public RelayCommand AddTaskCommand { get; }
     public RelayCommand MinimizeToIconCommand { get; }
     public RelayCommand ToggleCompletedCommand { get; }
+    public RelayCommand ToggleDeletedCommand { get; }
     public RelayCommand OpenSettingsCommand { get; }
     public RelayCommand OpenAboutCommand { get; }
     public RelayCommand ExitCommand { get; }
@@ -85,6 +96,7 @@ public sealed class MainViewModel : ObservableObject
     {
         ActiveTasks.Clear();
         CompletedTasks.Clear();
+        DeletedTasks.Clear();
 
         // 进行中按到期时间升序（最早到期在最上，冻结需求 R1.16）
         foreach (var task in ReminderScheduler.SortActiveByDue(_coordinator.Tasks))
@@ -97,22 +109,53 @@ public sealed class MainViewModel : ObservableObject
             CompletedTasks.Add(CreateItem(task));
         }
 
+        foreach (var task in _coordinator.Tasks.Where(t => t.Status == ReminderTaskStatus.Deleted))
+        {
+            DeletedTasks.Add(CreateItem(task));
+        }
+
         HasCompleted = CompletedTasks.Count > 0;
+        HasDeleted = DeletedTasks.Count > 0;
         OnPropertyChanged(nameof(HasActiveTasks));
         OnPropertyChanged(nameof(EmptyHintVisible));
         CompletedChanged?.Invoke();
     }
 
-    private TaskItemViewModel CreateItem(ReminderTask task) => new(
-        task,
-        onComplete: t => { _coordinator.CompleteTask(t.Id); RefreshFromCoordinator(); },
-        onSnooze: t => RequestSnooze?.Invoke(t),
-        onRestore: t => { _coordinator.RestoreTask(t.Id); RefreshFromCoordinator(); },
-        onDelete: t => RequestDelete?.Invoke(t));
+    private TaskItemViewModel CreateItem(ReminderTask task)
+    {
+        var isDeleted = task.Status == ReminderTaskStatus.Deleted;
+        return new TaskItemViewModel(
+            task,
+            onComplete: t => { _coordinator.CompleteTask(t.Id); RefreshFromCoordinator(); },
+            onSnooze: t => RequestSnooze?.Invoke(t),
+            onRestore: isDeleted
+                ? t => { _coordinator.RestoreDeletedTask(t.Id); RefreshFromCoordinator(); }
+                : t => { _coordinator.RestoreTask(t.Id); RefreshFromCoordinator(); },
+            onDelete: isDeleted
+                ? t => RequestHardDelete?.Invoke(t)
+                : t => RequestDelete?.Invoke(t));
+    }
 
     /// <summary>稍后/删除需要确认弹窗（由窗口层实现，含固定选项）</summary>
     public event Action<ReminderTask>? RequestSnooze;
     public event Action<ReminderTask>? RequestDelete;
+
+    /// <summary>已删除库的「彻底删除」（不可恢复，仍需确认）</summary>
+    public event Action<ReminderTask>? RequestHardDelete;
+
+    /// <summary>从已删除库恢复</summary>
+    public void RestoreDeleted(ReminderTask task)
+    {
+        _coordinator.RestoreDeletedTask(task.Id);
+        RefreshFromCoordinator();
+    }
+
+    /// <summary>从已删除库彻底清除（不可恢复）</summary>
+    public void HardDelete(ReminderTask task)
+    {
+        _coordinator.HardDeleteTask(task.Id);
+        RefreshFromCoordinator();
+    }
 
     /// <summary>每秒刷新所有任务的倒计时显示</summary>
     public void Tick(DateTime now)
@@ -123,5 +166,21 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private void ToggleCompletedPanel() => CompletedPanelVisible = !CompletedPanelVisible;
+    private void ToggleCompletedPanel()
+    {
+        CompletedPanelVisible = !CompletedPanelVisible;
+        if (CompletedPanelVisible)
+        {
+            DeletedPanelVisible = false; // 两个历史面板互斥
+        }
+    }
+
+    private void ToggleDeletedPanel()
+    {
+        DeletedPanelVisible = !DeletedPanelVisible;
+        if (DeletedPanelVisible)
+        {
+            CompletedPanelVisible = false;
+        }
+    }
 }

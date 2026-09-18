@@ -100,10 +100,41 @@ public sealed class ReminderCoordinator
         Save();
     }
 
-    /// <summary>永久删除任务（已完成列表的「删除」）</summary>
+    /// <summary>
+    /// 删除任务（软删除：进入「已删除」库，数据保留，可恢复，冻结需求 R1.14）。
+    /// 从已完成删除 = 确认任务完结不再需要；从进行中删除 = 放弃该任务。
+    /// </summary>
     public void DeleteTask(Guid id)
     {
+        var task = _tasks.FirstOrDefault(t => t.Id == id);
+        if (task is null)
+        {
+            return;
+        }
+
+        task.MarkDeleted();
+        _notifiedIds.Remove(id);
+        Save();
+    }
+
+    /// <summary>彻底删除（从「已删除」库清除，不可恢复）</summary>
+    public void HardDeleteTask(Guid id)
+    {
         _tasks.RemoveAll(t => t.Id == id);
+        _notifiedIds.Remove(id);
+        Save();
+    }
+
+    /// <summary>从「已删除」库恢复为进行中：从现在起按原时长重新计时</summary>
+    public void RestoreDeletedTask(Guid id, DateTime? now = null)
+    {
+        var task = _tasks.FirstOrDefault(t => t.Id == id);
+        if (task is null)
+        {
+            return;
+        }
+
+        task.Restore(now ?? DateTime.Now);
         _notifiedIds.Remove(id);
         Save();
     }

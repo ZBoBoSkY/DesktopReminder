@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using DesktopReminder.App.Themes;
@@ -34,6 +35,7 @@ public partial class App : Application
     private ReminderCoordinator _coordinator = null!;
     private ReminderEventBridge _reminderBridge = null!;
     private SystemReminderNotifier _soundNotifier = null!;
+    private ForegroundAppNameProvider _appNameProvider = null!;
     private WindowStateMachine _stateMachine = null!;
     private MainViewModel _mainViewModel = null!;
     private MainWindow _mainWindow = null!;
@@ -97,10 +99,10 @@ public partial class App : Application
         _reminderBridge = new ReminderEventBridge(_soundNotifier);
         _coordinator = new ReminderCoordinator(taskRepo, _reminderBridge, _settings);
         _stateMachine = new WindowStateMachine(_settings);
-        var appNameProvider = new ForegroundAppNameProvider(Path.Combine(DataDirectory, "app_names.json"));
+        _appNameProvider = new ForegroundAppNameProvider(Path.Combine(DataDirectory, "app_names.json"));
 
         // 3) ViewModel 与窗口
-        _mainViewModel = new MainViewModel(_coordinator, appNameProvider);
+        _mainViewModel = new MainViewModel(_coordinator, _appNameProvider);
         _mainViewModel.RefreshFromCoordinator();
         _mainWindow = new MainWindow(_mainViewModel);
         _iconWindow = new IconWindow();
@@ -138,6 +140,7 @@ public partial class App : Application
         _mainViewModel.RequestExit += ExitApplication;
         _mainViewModel.RequestSnooze += ShowSnoozeOptions;
         _mainViewModel.RequestDelete += DeleteTaskWithConfirm;
+        _mainViewModel.RequestHardDelete += HardDeleteWithConfirm;
 
         // 图标窗口
         _iconWindow.RequestOpenMain += () =>
@@ -172,6 +175,9 @@ public partial class App : Application
         try
         {
             var now = DateTime.Now;
+
+            // 轮询记录上一个前台软件（新建任务自动捕捉的数据源）
+            _appNameProvider.Refresh(new WindowInteropHelper(_mainWindow).Handle);
 
             _coordinator.Tick(now);
             _mainViewModel.Tick(now);
@@ -292,11 +298,23 @@ public partial class App : Application
     private void DeleteTaskWithConfirm(ReminderTask task)
     {
         var result = MessageBox.Show(
-            $"确定删除「{task.AppName}」吗？删除后不可恢复。", "删除任务",
+            $"确定删除「{task.AppName}」吗？删除后可在「已删除」中找回。", "删除任务",
             MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
         if (result == MessageBoxResult.Yes)
         {
             _coordinator.DeleteTask(task.Id);
+            _mainViewModel.RefreshFromCoordinator();
+        }
+    }
+
+    private void HardDeleteWithConfirm(ReminderTask task)
+    {
+        var result = MessageBox.Show(
+            $"确定彻底删除「{task.AppName}」吗？此操作不可恢复。", "彻底删除",
+            MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+        if (result == MessageBoxResult.Yes)
+        {
+            _coordinator.HardDeleteTask(task.Id);
             _mainViewModel.RefreshFromCoordinator();
         }
     }

@@ -117,14 +117,41 @@ public class ReminderCoordinatorTests
     }
 
     [Fact]
-    public void DeleteTask_RemovesFromList()
+    public void DeleteTask_MovesToDeleted_NotRemoved()
     {
         var (coordinator, _, _) = Create();
         var task = coordinator.AddTask("Chrome", "", null, Now);
 
         coordinator.DeleteTask(task.Id);
 
+        // 软删除：仍在列表（持久化保留），状态为已删除
+        Assert.Single(coordinator.Tasks);
+        Assert.Equal(ReminderTaskStatus.Deleted, task.Status);
+    }
+
+    [Fact]
+    public void HardDeleteTask_RemovesCompletely()
+    {
+        var (coordinator, _, _) = Create();
+        var task = coordinator.AddTask("Chrome", "", null, Now);
+        coordinator.DeleteTask(task.Id);
+
+        coordinator.HardDeleteTask(task.Id);
+
         Assert.Empty(coordinator.Tasks);
+    }
+
+    [Fact]
+    public void RestoreDeletedTask_ReactivatesWithFullDuration()
+    {
+        var (coordinator, _, _) = Create();
+        var task = coordinator.AddTask("Chrome", "", TimeSpan.FromMinutes(5), Now);
+        coordinator.DeleteTask(task.Id);
+
+        coordinator.RestoreDeletedTask(task.Id, Now.AddMinutes(30));
+
+        Assert.Equal(ReminderTaskStatus.Active, task.Status);
+        Assert.Equal(Now.AddMinutes(35), task.DueAt);
     }
 
     [Fact]

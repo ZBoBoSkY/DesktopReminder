@@ -8,46 +8,60 @@ using DesktopReminder.Core.Services;
 /// 前台窗口软件名称提供器（冻结需求 R1.2 / R1.3）。
 ///
 /// 识别策略（多级回退，按用户确认的方案）：
-///   1. Windows API 取前台窗口所属进程；
-///   2. 进程名（不含 .exe）查映射表 → 中文友好名（如 explorer → 文件管理器）；
-///   3. 映射表支持用户自定义文件（exe 同级 app_names.json），用户条目优先；
+///   1. 持续轮询（App 每秒调用 <see cref="Refresh"/>）：记录「上一个非本软件的前台窗口」；
+///      —— 关键：用户点「新建任务」那一刻，前台已经是本软件自己，
+///         只有提前轮询记录，才能拿到用户真正上一个操作的软件。
+///   2. 进程名（不含 .exe）查映射表 → 中文友好名（explorer → 文件管理器）；
+///   3. 映射表支持用户自定义文件（data 目录 app_names.json），用户条目优先；
 ///   4. 查不到映射 → 返回英文进程名原样（不拼接窗口标题、不显示 EXE 标识）。
 /// </summary>
 public sealed class ForegroundAppNameProvider : IAppNameProvider
 {
     private readonly IReadOnlyDictionary<string, string> _map;
+    private IntPtr _lastForeignWindow;
+    private string _lastName = "未知";
 
     public ForegroundAppNameProvider(string? mappingFilePath = null)
     {
         _map = LoadMapping(mappingFilePath);
     }
 
-    public string GetPreviousAppName()
+    /// <summary>
+    /// 轮询刷新（每秒调用）：记录上一个非本软件的前台窗口。
+    /// </summary>
+    /// <param name="ownHandle">本软件主窗口句柄（跳过自己）</param>
+    public void Refresh(IntPtr ownHandle)
     {
+        var hwnd = GetForegroundWindow();
+        if (hwnd == IntPtr.Zero || hwnd == ownHandle)
+        {
+            return; // 前台是桌面或本软件自己，不更新
+        }
+
+        if (hwnd == _lastForeignWindow)
+        {
+            return; // 没有变化，避免重复查询进程
+        }
+
+        _lastForeignWindow = hwnd;
+        GetWindowThreadProcessId(hwnd, out var processId);
+
         try
         {
-            var hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero)
-            {
-                return "未知";
-            }
-
-            GetWindowThreadProcessId(hwnd, out var processId);
             using var process = System.Diagnostics.Process.GetProcessById((int)processId);
             var processName = process.ProcessName; // 不含 .exe
-            if (_map.TryGetValue(processName.ToLowerInvariant(), out var friendlyName))
-            {
-                return friendlyName;
-            }
-
-            return processName;
+            _lastName = _map.TryGetValue(processName.ToLowerInvariant(), out var friendlyName)
+                ? friendlyName
+                : processName;
         }
         catch (Exception)
         {
-            // 进程已退出 / 权限不足等：返回占位，由上层日志兜底
-            return "未知";
+            // 进程已退出 / 权限不足：保留上一次记录
         }
     }
+
+    /// <summary>返回最近记录的上一个操作的软件名称</summary>
+    public string GetPreviousAppName() => _lastName;
 
     private static IReadOnlyDictionary<string, string> LoadMapping(string? filePath)
     {

@@ -31,7 +31,6 @@ public abstract class ThemeWindow : Window
         Resources["ThemeAccent"] = c.Accent;
         Resources["ThemeDue"] = c.Due;
         Resources["ThemeActive"] = c.Active;
-        Resources["ThemeHover"] = new System.Windows.Media.SolidColorBrush(
-            System.Windows.Media.Color.FromArgb(0x22, 0x00, 0x00, 0x00));
+        Resources["ThemeHover"] = c.Hover;
     }
 }

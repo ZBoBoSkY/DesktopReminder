@@ -46,18 +46,22 @@ public partial class IconWindow : ThemeWindow
             AppIconFactory.DrawIcon(dc, countdownText, badgeCount, hasOverdue, CircleSize, ThemeManager.Current);
         }
 
-        // 计算标签宽度（若有），决定窗口尺寸
-        double width = CircleSize + WindowMargin * 2;
-        if (!string.IsNullOrEmpty(countdownText))
+        // 计算标签宽度（若有），决定窗口尺寸。
+        // 拖拽期间冻结尺寸：窗口在移动中改 Width/Height 会让鼠标坐标系漂移 → 图标晃动（本轮修复）
+        if (!_dragging)
         {
-            var tf = new FormattedText(
-                countdownText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                new Typeface("Microsoft YaHei"), CircleSize * 0.26, System.Windows.Media.Brushes.Black, 1.25);
-            width += tf.Width + 6 + 16 + 4;
-        }
+            double width = CircleSize + WindowMargin * 2;
+            if (!string.IsNullOrEmpty(countdownText))
+            {
+                var tf = new FormattedText(
+                    countdownText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                    new Typeface("Microsoft YaHei"), CircleSize * 0.26, System.Windows.Media.Brushes.Black, 1.25);
+                width += tf.Width + 6 + 16 + 4;
+            }
 
-        Width = Math.Max(width, CircleSize + WindowMargin * 2);
-        Height = CircleSize + WindowMargin * 2;
+            Width = Math.Max(width, CircleSize + WindowMargin * 2);
+            Height = CircleSize + WindowMargin * 2;
+        }
 
         IconImage.Source = AppIconFactory.Render(visual, (int)Width, (int)Height);
         IconImage.Width = Width;
