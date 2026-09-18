@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>桌面轻提醒 V3 · 需求规格与架构设计（冻结版）</title>
+<style>
+  :root{
+    --bg:#f8fafc; --card:#ffffff; --border:#e2e8f0; --text:#1e293b;
+    --dim:#64748b; --accent:#0891b2; --accent2:#0e7490;
+    --red:#dc2626; --amber:#d97706; --green:#16a34a; --purple:#7c3aed;
+    --blue:#2563eb;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.75;padding:32px 16px;}
+  .container{max-width:1000px;margin:0 auto;}
+  header{background:linear-gradient(135deg,#0f172a 0%,#164e63 100%);color:#f1f5f9;border-radius:16px;padding:36px 32px;margin-bottom:24px;}
+  header h1{font-size:25px;margin-bottom:6px;}
+  header .sub{color:#94a3b8;font-size:14px;}
+  .meta{margin-top:12px;font-size:12px;color:#cbd5e1;}
+  .meta span{display:inline-block;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.35);padding:1px 10px;border-radius:14px;margin-right:8px;}
+  .meta .ok{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);}
+  h2{font-size:20px;margin:34px 0 14px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:18px 0 8px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
+  .note{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;color:#0c4a6e;font-size:14px;margin:12px 0;}
+  .okbox{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;color:#14532d;font-size:14px;margin:12px 0;}
+  .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;color:#78350f;font-size:14px;margin:12px 0;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:#f1f5f9;font-weight:600;white-space:nowrap;}
+  .p{display:inline-block;font-size:11px;font-weight:700;border-radius:10px;padding:0 8px;line-height:18px;white-space:nowrap;}
+  .p0{background:#fee2e2;color:#b91c1c;}
+  .p1{background:#fef3c7;color:#b45309;}
+  .p2{background:#dcfce7;color:#15803d;}
+  code{background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:12.5px;font-family:Consolas,monospace;}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;}
+  .flow-item{background:#0f172a;color:#e2e8f0;padding:8px 14px;border-radius:8px;font-size:13px;border:1px solid #334155;}
+  .flow-arrow{color:var(--accent);font-weight:bold;}
+  ul,ol{padding-left:22px;}
+  li{margin-bottom:5px;}
+  .footnote{color:var(--dim);font-size:12px;margin-top:28px;text-align:center;}
+  .checklist li{list-style:none;position:relative;padding-left:26px;}
+  .checklist li::before{content:"☑";position:absolute;left:2px;color:var(--green);font-size:15px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>桌面轻提醒 V3 · 需求规格与架构设计（冻结版）</h1>
+  <div class="sub">你的第一款软件 · C# + WPF 完整重构 · 本文件是开发唯一依据</div>
+  <div class="meta"><span class="ok">版本：v1.0 已冻结</span><span class="ok">日期：2026-09-18</span><span class="ok">状态：待开发</span></div>
+</header>
+
+<div class="okbox">
+  <b>✅ 需求已冻结。</b>本文档汇总了：① 全部 8 大模块功能需求；② 4 项技术定案；③ 第一轮深度追问的 14 项确认结果；④ 软件名称映射表（初版）。除非你主动提出新需求，开发将严格按本文档执行。
+</div>
+
+<h2>〇、软件一句话定位</h2>
+<div class="card">
+  <p><b>桌面轻提醒</b>：一个安静地浮在桌面上、用「清晰 → 半透明 → 图标」自动收起、能自动记住你正在做什么并到点提醒你的<u>多线程工作小助手</u>。原则：<b>平时不打扰，需要时就在眼前</b>。</p>
+</div>
+
+<h2>一、技术定案（已确认，不再变更）</h2>
+<div class="card">
+  <table>
+    <tr><th style="width:22%;">决策项</th><th style="width:44%;">定案</th><th>说明</th></tr>
+    <tr><td><b>技术选型</b></td><td><b>C# + WPF（方案 B）</b></td><td>Windows 原生框架；便携版体积目标 2~8MB；毛玻璃/亚克力系统原生支持</td></tr>
+    <tr><td><b>默认任务时长</b></td><td>5 分钟</td><td>可在设置中修改</td></tr>
+    <tr><td><b>系统兼容</b></td><td>Win10 / Win11 必须；Win7 尽力兼容</td><td>不牺牲 Win10/11 体验去兼容 Win7</td></tr>
+    <tr><td><b>发布形式</b></td><td>便携版（解压即用）</td><td>不强制安装包；后续需要再加</td></tr>
+    <tr><td><b>软件名称</b></td><td>「桌面轻提醒」 DesktopReminder</td><td>GitHub 仓库名沿用</td></tr>
+    <tr><td><b>界面语言</b></td><td>仅中文</td><td>国际化后续版本再考虑</td></tr>
+    <tr><td><b>多显示器</b></td><td>无特殊逻辑</td><td>图标/窗口通过拖动自行摆放，位置记忆</td></tr>
+  </table>
+</div>
+
+<!-- ============ 二、需求清单 ============ -->
+<h2>二、需求清单（8 大模块，已冻结）</h2>
+<p style="color:var(--dim);font-size:13px;margin-bottom:10px;">优先级：<span class="p p0">P0 必须</span> <span class="p p1">P1 重要</span> <span class="p p2">P2 增强</span>　标注「追问确认」的为 2026-09-18 第一轮追问新增/明确的条目</p>
+
+<h3>模块 1 · 任务管理</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R1.1</td><td><span class="p p0">P0</span></td><td>添加任务入口：标题栏「+」号、托盘菜单「添加任务」、空状态双击第一行、双击任务列表第一列，四种入口都可用</td></tr>
+    <tr><td>R1.2</td><td><span class="p p0">P0</span></td><td>新建任务对话框：<b>自动填入上一个操作的软件名称</b>（可编辑修改），只显示软件名称，<b>不显示</b>进程名、窗口标题、EXE 标识</td></tr>
+    <tr><td>R1.3</td><td><span class="p p0">P0</span></td><td>软件名称识别策略：优先中文友好名（映射表）；没有映射时用英文原名；映射表做成可编辑配置文件（见附录一）</td></tr>
+    <tr><td>R1.4</td><td><span class="p p1">P1</span></td><td>备注：软件名后允许添加一句话/一个词，说明这个软件具体在做什么事</td></tr>
+    <tr><td>R1.5</td><td><span class="p p0">P0</span></td><td>时间选择：固定选项（5/10/15/30 分钟）+ <b>自定义时间</b>；默认 5 分钟（设置中可改）</td></tr>
+    <tr><td>R1.6</td><td><span class="p p0">P0</span></td><td>任务条目显示：软件名称 + 备注 + 实时倒计时</td></tr>
+    <tr><td>R1.7</td><td><span class="p p0">P0</span></td><td>任务到期：条目醒目（颜色/呼吸效果）+ 声音提醒（可关闭）+ 系统通知</td></tr>
+    <tr><td>R1.8</td><td><span class="p p0">P0</span></td><td><b>到期任务不自动标记</b>（追问确认）：进入「过期」状态红色显示，直到你手动处理（完成/稍后/删除）</td></tr>
+    <tr><td>R1.9</td><td><span class="p p0">P0</span></td><td><b>过期任务每 5 分钟提醒一次</b>（追问确认）：图标变回半透明 + 声音，直到处理为止</td></tr>
+    <tr><td>R1.10</td><td><span class="p p0">P0</span></td><td>完成任务：任务条目后的「✓」按钮，点击移入「已完成」</td></tr>
+    <tr><td>R1.11</td><td><span class="p p0">P0</span></td><td>稍后提醒：任务条目后的「稍后」按钮，固定选项 5/10/15/30 分钟；<b>选择后从现在起重新计时</b>（追问确认）</td></tr>
+    <tr><td>R1.12</td><td><span class="p p0">P0</span></td><td>已完成列表：<b>不在主界面直接出现</b>，通过标题栏「✓」按钮进入单独区域/界面</td></tr>
+    <tr><td>R1.13</td><td><span class="p p0">P0</span></td><td>已完成任务操作：「恢复」（误点可找回）和「删除」（永久移除）；<b>删除时弹确认框</b>（追问确认）</td></tr>
+    <tr><td>R1.14</td><td><span class="p p0">P0</span></td><td>空状态：显示三行空列表，第一行浅色字提示「双击新建任务」</td></tr>
+    <tr><td>R1.15</td><td><span class="p p1">P1</span></td><td>任务数据持久化：重启软件后任务、已完成、设置全部保留</td></tr>
+    <tr><td>R1.16</td><td><span class="p p2">P2</span></td><td><b>任务列表排序：按到期时间升序</b>（追问确认），最早到期的在最上面</td></tr>
+  </table>
+</div>
+
+<h3>模块 2 · 显示与状态切换</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R2.1</td><td><span class="p p0">P0</span></td><td>窗口永远最顶层显示（置顶）</td></tr>
+    <tr><td>R2.2</td><td><span class="p p0">P0</span></td><td>三态状态机：<b>清晰（ACTIVE）→ 半透明（GLASS）→ 图标（ICON）</b></td></tr>
+    <tr><td>R2.3</td><td><span class="p p0">P0</span></td><td>默认 5 分钟无操作 → 自动变半透明（超时可配置）</td></tr>
+    <tr><td>R2.4</td><td><span class="p p0">P0</span></td><td>半透明 30 秒无操作 → 自动收成小图标（超时可配置）</td></tr>
+    <tr><td>R2.5</td><td><span class="p p1">P1</span></td><td>半透明状态的不透明度可配置</td></tr>
+    <tr><td>R2.6</td><td><span class="p p0">P0</span></td><td>鼠标移到半透明界面上 → <b>立即获取焦点并激活</b>为清晰状态</td></tr>
+    <tr><td>R2.7</td><td><span class="p p0">P0</span></td><td>图标状态：点击图标 → 打开主界面；按住拖拽 → 移动图标位置</td></tr>
+    <tr><td>R2.8</td><td><span class="p p1">P1</span></td><td>状态切换动画柔和（透明度渐变过渡，不突然跳变）</td></tr>
+    <tr><td>R2.9</td><td><span class="p p1">P1</span></td><td>图标状态周期性自动变回半透明提醒（提醒间隔可配置）</td></tr>
+    <tr><td>R2.10</td><td><span class="p p1">P1</span></td><td>无任务时保持圆形图标；有任务时圆形 + 右侧伸出标签显示最近到期任务的倒计时</td></tr>
+    <tr><td>R2.11</td><td><span class="p p0">P0</span></td><td><b>多任务显示规则</b>（追问确认）：标签显示<b>最早到期</b>任务的倒计时；角标数字=到期+过期任务总数，超过 9 显示「9+」</td></tr>
+    <tr><td>R2.12</td><td><span class="p p0">P0</span></td><td><b>点击界面外部不自动收起</b>（追问确认）：只靠定时自动收起，避免误操作</td></tr>
+  </table>
+</div>
+
+<h3>模块 3 · 窗口交互</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R3.1</td><td><span class="p p0">P0</span></td><td>标题栏<b>全区域可拖拽</b>（包括文字与按钮之间的空白区域），不是只有标题文字</td></tr>
+    <tr><td>R3.2</td><td><span class="p p0">P0</span></td><td>拖拽与按钮点击不冲突：按钮区域按下不触发拖拽，空白区域按下才拖拽</td></tr>
+    <tr><td>R3.3</td><td><span class="p p0">P0</span></td><td>大小调整：<b>仅右下角一个热区</b>（斜箭头光标时按住拖拽），其他边缘不响应</td></tr>
+    <tr><td>R3.4</td><td><span class="p p0">P0</span></td><td>窗口高度<b>根据任务数量自动调整</b>（任务多则变高）</td></tr>
+    <tr><td>R3.5</td><td><span class="p p1">P1</span></td><td>手动调整大小后：取消自动高度，保持手动尺寸（双击标题栏可恢复自动）</td></tr>
+    <tr><td>R3.6</td><td><span class="p p1">P1</span></td><td>窗口位置、尺寸、<b>图标位置</b>记忆（追问确认）：重启后全部恢复</td></tr>
+  </table>
+</div>
+
+<h3>模块 4 · 图标</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R4.1</td><td><span class="p p0">P0</span></td><td>图标样式：<b>圆角矩形 + 圆形连接成一体</b>（不再割裂），整体美观</td></tr>
+    <tr><td>R4.2</td><td><span class="p p0">P0</span></td><td>角标：显示到期任务数，<b>绿色=正在倒计时、红色=已过期</b>，对角分布</td></tr>
+    <tr><td>R4.3</td><td><span class="p p0">P0</span></td><td>有任务时标签显示最早到期任务的倒计时（如 05:32）</td></tr>
+    <tr><td>R4.4</td><td><span class="p p1">P1</span></td><td>所有图标使用<b>矢量绘制</b>（不因缩放失真，不用 emoji），全局统一风格</td></tr>
+    <tr><td>R4.5</td><td><span class="p p1">P1</span></td><td>角标不遮挡、不溢出（在图标状态下完整显示）</td></tr>
+  </table>
+</div>
+
+<h3>模块 5 · 主题</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R5.1</td><td><span class="p p0">P0</span></td><td>深色 / 浅色两套主题</td></tr>
+    <tr><td>R5.2</td><td><span class="p p0">P0</span></td><td>跟随 Windows 系统主题自动切换（系统深色→软件深色）</td></tr>
+    <tr><td>R5.3</td><td><span class="p p0">P0</span></td><td>主题切换是<b>全套变化</b>：背景、文字、边框、图标、对话框、设置页同步变化</td></tr>
+    <tr><td>R5.4</td><td><span class="p p1">P1</span></td><td>主题模式可手动选择：跟随系统 / 深色 / 浅色</td></tr>
+  </table>
+</div>
+
+<h3>模块 6 · 设置</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R6.1</td><td><span class="p p0">P0</span></td><td>设置入口：<b>只在托盘图标右键菜单里</b>（「设置」），主界面保持简洁</td></tr>
+    <tr><td>R6.2</td><td><span class="p p0">P0</span></td><td>显示设置：半透明超时（默认5分钟）、图标超时（默认30秒）、提醒间隔、半透明度</td></tr>
+    <tr><td>R6.3</td><td><span class="p p0">P0</span></td><td>任务设置：默认时长（默认5分钟）</td></tr>
+    <tr><td>R6.4</td><td><span class="p p1">P1</span></td><td>提醒设置：声音提醒开关（<b>系统默认提示音</b>，追问确认）、开机自启开关（<b>默认关闭</b>，追问确认）</td></tr>
+    <tr><td>R6.5</td><td><span class="p p0">P0</span></td><td>外观设置：主题模式（跟随系统/深色/浅色）</td></tr>
+    <tr><td>R6.6</td><td><span class="p p0">P0</span></td><td>所有设置即时生效并持久化保存</td></tr>
+  </table>
+</div>
+
+<h3>模块 7 · 托盘与提醒</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R7.1</td><td><span class="p p0">P0</span></td><td>托盘图标：有到期任务时显示数字角标</td></tr>
+    <tr><td>R7.2</td><td><span class="p p0">P0</span></td><td>托盘右键菜单：显示主界面、添加任务、设置、关于、声音提醒（勾选）、开机自启（勾选）、退出</td></tr>
+    <tr><td>R7.3</td><td><span class="p p1">P1</span></td><td>单击托盘图标打开主界面</td></tr>
+    <tr><td>R7.4</td><td><span class="p p0">P0</span></td><td>到点提醒两层机制：① 图标/角标显示数字 → ② 鼠标移到图标自动展开主界面看到详情</td></tr>
+  </table>
+</div>
+
+<h3>模块 8 · 工程与发布</h3>
+<div class="card">
+  <table>
+    <tr><th style="width:70px;">编号</th><th style="width:100px;">优先级</th><th>需求描述</th></tr>
+    <tr><td>R8.1</td><td><span class="p p0">P0</span></td><td><b>分层架构</b>：表现层 / 应用层 / 领域层 / 基础设施 四层单向依赖（见第三章）</td></tr>
+    <tr><td>R8.2</td><td><span class="p p0">P0</span></td><td>版本管理：git 分支 + 标签，每个「好用」版本保留可回溯</td></tr>
+    <tr><td>R8.3</td><td><span class="p p0">P0</span></td><td>更新日志（CHANGELOG）+ 功能说明（README）同步 GitHub</td></tr>
+    <tr><td>R8.4</td><td><span class="p p0">P0</span></td><td>自动化测试：核心逻辑单元测试 + UI 冒烟测试，每次修改后必须跑通</td></tr>
+    <tr><td>R8.5</td><td><span class="p p0">P0</span></td><td>日志兜底：所有异常写入日志文件，界面不再「点了没反应」却不知道原因</td></tr>
+    <tr><td>R8.6</td><td><span class="p p0">P0</span></td><td>便携发布：免安装版（解压即用），体积目标显著小于旧版（技术定案：C# + WPF）</td></tr>
+    <tr><td>R8.7</td><td><span class="p p1">P1</span></td><td>兼容 Win10 / Win11；Win7 尽力</td></tr>
+    <tr><td>R8.8</td><td><span class="p p2">P2</span></td><td><b>数据导出/备份：本版本不做</b>（追问确认），数据本地自动保存，后续版本考虑</td></tr>
+  </table>
+</div>
+
+<!-- ============ 三、架构设计 ============ -->
+<h2>三、架构设计（确保「改一处不影响其他」）</h2>
+
+<div class="card">
+  <h3>3.1 四层架构（依赖只许从上往下）</h3>
+  <table>
+    <tr><th style="width:14%;">层级</th><th style="width:30%;">模块</th><th>职责（只做这些，不做别的）</th></tr>
+    <tr><td><b>表现层 UI</b></td><td>主面板、对话框、图标窗口、托盘</td><td>只负责「画出来」和「收点击」；<b>不写任何业务判断</b>；颜色只从主题管理器取</td></tr>
+    <tr><td><b>应用层</b></td><td>状态机、任务调度、提醒器</td><td>管理 ACTIVE/GLASS/ICON 切换、计时、到期提醒；不关心窗口怎么画</td></tr>
+    <tr><td><b>领域层</b></td><td>TaskManager、配置管理</td><td>任务的增删改查、到期计算、配置读写；<b>纯逻辑不依赖界面库</b>，可单独测试</td></tr>
+    <tr><td><b>基础设施</b></td><td>Windows 封装、持久化、日志</td><td>所有系统 API（窗口识别、原生消息、注册表）集中于此；出问题只改这一层</td></tr>
+  </table>
+  <div class="note"><b>为什么能避免「改 A 坏 B」：</b>每一层只允许调用它下面那一层（MVVM 框架天然支持）。UI 改样式不影响逻辑；逻辑改算法不影响界面；系统层换实现不影响业务。任何跨层调用都是架构违规，评审时打回。</div>
+</div>
+
+<div class="card">
+  <h3>3.2 三个最容易出问题的点，架构级解决</h3>
+  <table>
+    <tr><th style="width:22%;">老问题</th><th style="width:38%;">架构方案</th><th>为什么这次不会再犯</th></tr>
+    <tr><td>窗口拖拽/调大小反复失灵</td><td>窗口级交互（拖拽、右下角调大小）统一走 <code>WM_NCHITTEST</code> 原生消息；按钮/列表点击走组件事件</td><td>系统级处理不被子控件拦截，机制唯一、入口唯一</td></tr>
+    <tr><td>主题只变背景不变字体</td><td>ThemeManager 唯一主题源；所有控件实现 <code>ApplyTheme()</code>；切换时递归刷新整个控件树</td><td>新控件漏实现 ApplyTheme 在测试期即被发现</td></tr>
+    <tr><td>异常静默、点不动没反应</td><td>全局异常捕获写入日志文件；每次操作有日志可查</td><td>任何问题都能看日志定位，不再「猜」</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>3.3 状态机（软件核心心脏）</h3>
+  <div class="flow">
+    <span class="flow-item">ACTIVE 清晰</span><span class="flow-arrow">→</span>
+    <span class="flow-item">无操作 5 分钟</span><span class="flow-arrow">→</span>
+    <span class="flow-item">GLASS 半透明</span><span class="flow-arrow">→</span>
+    <span class="flow-item">30 秒无操作</span><span class="flow-arrow">→</span>
+    <span class="flow-item">ICON 图标</span>
+  </div>
+  <div class="flow">
+    <span class="flow-item">鼠标悬停 GLASS</span><span class="flow-arrow">→</span><span class="flow-item">ACTIVE</span>
+    <span class="flow-item">点击 ICON</span><span class="flow-arrow">→</span><span class="flow-item">ACTIVE</span>
+    <span class="flow-item">ICON 定期提醒</span><span class="flow-arrow">→</span><span class="flow-item">GLASS</span>
+    <span class="flow-item">过期任务每 5 分钟</span><span class="flow-arrow">→</span><span class="flow-item">GLASS 提醒</span>
+  </div>
+  <p style="font-size:13px;color:var(--dim);">状态机由应用层独立模块管理，UI 只响应状态变化指令，不自己改状态。</p>
+</div>
+
+<!-- ============ 四、开发流程 ============ -->
+<h2>四、开发与验证流程（防止重蹈覆辙）</h2>
+<div class="card">
+  <div class="flow">
+    <span class="flow-item">需求冻结（本文档）</span><span class="flow-arrow">→</span>
+    <span class="flow-item">架构与接口定义</span><span class="flow-arrow">→</span>
+    <span class="flow-item">领域层开发+单测</span><span class="flow-arrow">→</span>
+    <span class="flow-item">应用层开发+单测</span><span class="flow-arrow">→</span>
+    <span class="flow-item">UI 层开发</span><span class="flow-arrow">→</span>
+    <span class="flow-item">冒烟测试</span><span class="flow-arrow">→</span>
+    <span class="flow-item">打标签发布</span>
+  </div>
+  <ul>
+    <li><b>一次只改一件事</b>：每个修改项独立提交，提交信息写明改了什么、为什么</li>
+    <li><b>每完成一个模块打一个版本标签</b>：v0.1（任务管理）→ v0.2（状态机）→ … 每个标签都有可运行版本，随时回退</li>
+    <li><b>修改必须过三关</b>：单元测试 → 冒烟测试 → 你的人工验收，三关全过才合入</li>
+    <li><b>每个「好用」版本</b>：立即打标签 + 备份 exe，永远能退回去</li>
+  </ul>
+  <div class="warn"><b>持续需求与问题清单：</b>后续你用「先记录再改」提出的任何需求，都登记到 GitHub Issues + 本文档附录二，随时可查状态。</div>
+</div>
+
+<!-- ============ 五、附录一 映射表 ============ -->
+<h2>五、附录一：软件名称映射表（初版，待本机实测校准）</h2>
+<div class="card">
+  <p style="font-size:13px;color:var(--dim);margin-bottom:8px;">识别规则：先查本表（进程名 → 中文名）；查不到时显示英文进程名。映射表做在软件配置文件中，后续你随时可自己补充。带「*」的进程名以你电脑实测为准。</p>
+  <table>
+    <tr><th style="width:22%;">分类</th><th style="width:30%;">进程名</th><th>显示名称</th></tr>
+    <tr><td rowspan="3"><b>浏览器</b></td><td>chrome.exe</td><td>谷歌浏览器</td></tr>
+    <tr><td>msedge.exe</td><td>Microsoft Edge 浏览器</td></tr>
+    <tr><td>firefox.exe</td><td>Firefox 火狐浏览器</td></tr>
+    <tr><td rowspan="7"><b>通讯办公</b></td><td>WeChat.exe</td><td>微信</td></tr>
+    <tr><td>QQ.exe</td><td>QQ</td></tr>
+    <tr><td>WXWork.exe</td><td>企业微信</td></tr>
+    <tr><td>feishu.exe / lark.exe</td><td>飞书</td></tr>
+    <tr><td>dingtalk.exe</td><td>钉钉</td></tr>
+    <tr><td>wemeetapp.exe</td><td>腾讯会议</td></tr>
+    <tr><td>doubaowork.exe *</td><td>豆包工作</td></tr>
+    <tr><td rowspan="8"><b>文档处理</b></td><td>WINWORD.EXE</td><td>Microsoft Word</td></tr>
+    <tr><td>EXCEL.EXE</td><td>Microsoft Excel</td></tr>
+    <tr><td>POWERPNT.EXE</td><td>Microsoft PowerPoint</td></tr>
+    <tr><td>wps.exe</td><td>WPS 办公软件</td></tr>
+    <tr><td>et.exe</td><td>WPS 表格</td></tr>
+    <tr><td>wpp.exe</td><td>WPS 演示</td></tr>
+    <tr><td>Acrobat.exe</td><td>Adobe Acrobat</td></tr>
+    <tr><td>FoxitReader.exe</td><td>福昕阅读器</td></tr>
+    <tr><td rowspan="7"><b>开发工具</b></td><td>code.exe</td><td>Visual Studio Code</td></tr>
+    <tr><td>devenv.exe</td><td>Visual Studio</td></tr>
+    <tr><td>idea64.exe</td><td>IntelliJ IDEA</td></tr>
+    <tr><td>pycharm64.exe</td><td>PyCharm</td></tr>
+    <tr><td>WindowsTerminal.exe</td><td>Windows 终端</td></tr>
+    <tr><td>cmd.exe</td><td>命令提示符</td></tr>
+    <tr><td>powershell.exe</td><td>Windows PowerShell</td></tr>
+    <tr><td rowspan="6"><b>系统工具</b></td><td>explorer.exe</td><td>文件管理器（资源管理器）</td></tr>
+    <tr><td>Taskmgr.exe</td><td>任务管理器</td></tr>
+    <tr><td>control.exe</td><td>控制面板</td></tr>
+    <tr><td>regedit.exe</td><td>注册表编辑器</td></tr>
+    <tr><td>mspaint.exe</td><td>画图</td></tr>
+    <tr><td>7zFM.exe</td><td>7-Zip 压缩管理器</td></tr>
+    <tr><td rowspan="5"><b>影音网盘</b></td><td>PotPlayerMini64.exe</td><td>PotPlayer 播放器</td></tr>
+    <tr><td>cloudmusic.exe</td><td>网易云音乐</td></tr>
+    <tr><td>Spotify.exe</td><td>Spotify 音乐</td></tr>
+    <tr><td>BaiduNetdisk.exe</td><td>百度网盘</td></tr>
+    <tr><td>QuarkCloudDrive.exe *</td><td>夸克网盘</td></tr>
+    <tr><td rowspan="5"><b>其他</b></td><td>Thunder.exe</td><td>迅雷</td></tr>
+    <tr><td>WinRAR.exe</td><td>WinRAR 压缩管理器</td></tr>
+    <tr><td>Typora.exe</td><td>Typora 编辑器</td></tr>
+    <tr><td>Obsidian.exe</td><td>Obsidian 笔记</td></tr>
+    <tr><td>Xmind.exe</td><td>XMind 思维导图</td></tr>
+  </table>
+  <div class="note"><b>说明：</b>① 进程名不区分大小写；② 带 * 的（豆包工作、夸克网盘）发布前我会在你电脑上实测校准；③ 若同款软件有多个进程名（如旧版/新版），映射表支持一个中文名对应多个进程名；④ 这份表会随软件一起打包，用户可编辑配置文件自行增补。</div>
+</div>
+
+<!-- ============ 六、附录二 ============ -->
+<h2>六、附录二：需求变更登记（后续「先记录再改」的需求记在这里）</h2>
+<div class="card">
+  <table>
+    <tr><th style="width:14%;">日期</th><th style="width:60%;">需求内容</th><th style="width:14%;">状态</th><th>备注</th></tr>
+    <tr><td>2026-09-18</td><td>第一轮追问 14 项全部确认（见本文档各模块标注）</td><td>已确认</td><td>—</td></tr>
+    <tr><td>—</td><td>（后续新需求在此登记，随时可查）</td><td>待登记</td><td>—</td></tr>
+  </table>
+</div>
+
+<div class="footnote">桌面轻提醒 V3 · 需求规格与架构设计 v1.0（冻结版） · 2026-09-18 · 下一步：搭建 C# + WPF 工程骨架</div>
+
+</div>
+</body>
+</html>

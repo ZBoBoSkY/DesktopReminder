@@ -1,0 +1,23 @@
+# .NET 构建产物
+bin/
+obj/
+*.user
+
+# IDE
+.vs/
+.vscode/
+*.suo
+
+# 发布产物
+publish/
+dist/
+release/
+
+# 预览与缓存
+.preview/
+*.log
+
+# 系统
+Thumbs.db
+Desktop.ini
+.DS_Store
