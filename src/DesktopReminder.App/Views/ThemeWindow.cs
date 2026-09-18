@@ -32,5 +32,6 @@ public abstract class ThemeWindow : Window
         Resources["ThemeDue"] = c.Due;
         Resources["ThemeActive"] = c.Active;
         Resources["ThemeHover"] = c.Hover;
+        Resources["ThemeDueSoft"] = c.DueSoft;
     }
 }

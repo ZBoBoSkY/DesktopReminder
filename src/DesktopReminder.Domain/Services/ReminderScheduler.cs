@@ -12,7 +12,9 @@ public static class ReminderScheduler
     /// <summary>进行中任务按到期时间升序排列（最早到期的在最上面）</summary>
     public static IReadOnlyList<ReminderTask> SortActiveByDue(IEnumerable<ReminderTask> tasks)
     {
-        return tasks.Where(t => t.Status == ReminderTaskStatus.Active)
+        // 进行中 = 未完成未删除（含已到期的 Due 状态）。
+        // 到期任务必须留在列表里：否则用户看到角标/提示条却找不到任务、也无法处理（历史 bug 根因）。
+        return tasks.Where(t => t.Status != ReminderTaskStatus.Completed && t.Status != ReminderTaskStatus.Deleted)
                     .OrderBy(t => t.DueAt)
                     .ToList();
     }

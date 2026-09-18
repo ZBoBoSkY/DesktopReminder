@@ -79,6 +79,12 @@ public sealed class MainViewModel : ObservableObject
         private set => SetProperty(ref _hasDeleted, value);
     }
 
+    /// <summary>已到期/过期任务数（主界面顶部红色提示条）</summary>
+    public int DueCount { get; private set; }
+
+    public bool HasDue => DueCount > 0;
+    public string DueBannerText => $"有 {DueCount} 项任务已到期，请处理";
+
     public RelayCommand AddTaskCommand { get; }
     public RelayCommand MinimizeToIconCommand { get; }
     public RelayCommand ToggleCompletedCommand { get; }
@@ -116,9 +122,22 @@ public sealed class MainViewModel : ObservableObject
 
         HasCompleted = CompletedTasks.Count > 0;
         HasDeleted = DeletedTasks.Count > 0;
+        RefreshDueCount(DateTime.Now);
         OnPropertyChanged(nameof(HasActiveTasks));
         OnPropertyChanged(nameof(EmptyHintVisible));
         CompletedChanged?.Invoke();
+    }
+
+    private void RefreshDueCount(DateTime now)
+    {
+        var due = ReminderScheduler.CountDueOrOverdue(_coordinator.Tasks, now);
+        if (due != DueCount)
+        {
+            DueCount = due;
+            OnPropertyChanged(nameof(DueCount));
+            OnPropertyChanged(nameof(HasDue));
+            OnPropertyChanged(nameof(DueBannerText));
+        }
     }
 
     private TaskItemViewModel CreateItem(ReminderTask task)
@@ -164,6 +183,9 @@ public sealed class MainViewModel : ObservableObject
         {
             item.Refresh(now);
         }
+
+        // 到期瞬间出现提示条
+        RefreshDueCount(now);
     }
 
     private void ToggleCompletedPanel()

@@ -17,6 +17,7 @@ public sealed class ThemeColors
     public required Color DueColor { get; init; }
     public required Color ActiveColor { get; init; }
     public required Color HoverColor { get; init; }
+    public required Color DueSoftColor { get; init; }
 
     public Brush Background => new SolidColorBrush(BackgroundColor);
     public Brush Surface => new SolidColorBrush(SurfaceColor);
@@ -27,6 +28,7 @@ public sealed class ThemeColors
     public Brush Due => new SolidColorBrush(DueColor);
     public Brush Active => new SolidColorBrush(ActiveColor);
     public Brush Hover => new SolidColorBrush(HoverColor);
+    public Brush DueSoft => new SolidColorBrush(DueSoftColor);
 
     /// <summary>
     /// Apple 风格系统色（浅/深两套，来自 iOS/macOS 系统调色板）：
@@ -40,10 +42,11 @@ public sealed class ThemeColors
         ForegroundColor = Color.FromRgb(0x1C, 0x1C, 0x1E), // iOS 主文本
         SecondaryTextColor = Color.FromRgb(0x8E, 0x8E, 0x93), // iOS 次要文本
         BorderColor = Color.FromRgb(0xE5, 0xE5, 0xEA), // iOS 分隔线
-        AccentColor = Color.FromRgb(0x00, 0x7A, 0xFF), // Apple 蓝
+        AccentColor = Color.FromRgb(0x58, 0x56, 0xD6), // 深靛蓝（iOS Indigo，方案 A）
         DueColor = Color.FromRgb(0xFF, 0x3B, 0x30), // Apple 红
         ActiveColor = Color.FromRgb(0x34, 0xC7, 0x59), // Apple 绿
         HoverColor = Color.FromArgb(0x12, 0x00, 0x00, 0x00),
+        DueSoftColor = Color.FromArgb(0x14, 0xFF, 0x3B, 0x30), // 红色 8% 底（过期行/提示条）
     };
 
     public static ThemeColors Dark { get; } = new()
@@ -53,9 +56,10 @@ public sealed class ThemeColors
         ForegroundColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // iOS 深色主文本
         SecondaryTextColor = Color.FromRgb(0x98, 0x98, 0x9F), // iOS 深色次要文本
         BorderColor = Color.FromRgb(0x38, 0x38, 0x3A), // iOS 深色分隔线
-        AccentColor = Color.FromRgb(0x0A, 0x84, 0xFF), // Apple 深色蓝
+        AccentColor = Color.FromRgb(0x5E, 0x5C, 0xE6), // 深靛蓝（iOS Dark Indigo，方案 A）
         DueColor = Color.FromRgb(0xFF, 0x45, 0x3A), // Apple 深色红
         ActiveColor = Color.FromRgb(0x30, 0xD1, 0x58), // Apple 深色绿
         HoverColor = Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF),
+        DueSoftColor = Color.FromArgb(0x26, 0xFF, 0x45, 0x3A), // 红色 15% 底（过期行/提示条）
     };
 }

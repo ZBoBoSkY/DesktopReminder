@@ -35,6 +35,25 @@ public class TaskSchedulerTests
     }
 
     [Fact]
+    public void SortActiveByDue_KeepsAlreadyDueTasksInList()
+    {
+        // 到期任务（状态已变为 Due）必须仍出现在「进行中」列表，
+        // 否则角标显示数字却找不到任务、也无法处理（历史 bug 回归防护）。
+        var due = MakeTask("Due", TimeSpan.FromMinutes(1), Now.AddMinutes(-2));
+        due.UpdateStatus(Now); // 模拟 Tick 刷新：Active → Due
+        var overdue = MakeTask("Overdue", TimeSpan.FromMinutes(1), Now.AddMinutes(-30));
+        overdue.UpdateStatus(Now);
+        var notDue = MakeTask("NotDue", TimeSpan.FromMinutes(1), Now.AddMinutes(10));
+
+        var sorted = ReminderScheduler.SortActiveByDue(new[] { due, overdue, notDue });
+
+        Assert.Equal(3, sorted.Count);
+        Assert.Equal("Overdue", sorted[0].AppName); // 过期最久排最上
+        Assert.Equal("Due", sorted[1].AppName);
+        Assert.Equal("NotDue", sorted[2].AppName);
+    }
+
+    [Fact]
     public void EarliestDue_ReturnsEarliestActiveTask()
     {
         var later = MakeTask("Later", TimeSpan.FromMinutes(10), Now.AddMinutes(10));

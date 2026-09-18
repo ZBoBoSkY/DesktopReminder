@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
@@ -44,6 +45,35 @@ public partial class App : Application
     private DispatcherTimer _timer = null!;
 
     private static string DataDirectory => Path.Combine(AppContext.BaseDirectory, "data");
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint { public int X; public int Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out NativePoint lpPoint);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect lpRect);
+
+    /// <summary>鼠标物理坐标是否落在窗口矩形内（半透明状态恢复清晰的系统级兜底）</summary>
+    private static bool IsPointerInside(Window window)
+    {
+        if (!window.IsVisible)
+        {
+            return false;
+        }
+
+        var hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == IntPtr.Zero || !GetCursorPos(out var pt) || !GetWindowRect(hwnd, out var rect))
+        {
+            return false;
+        }
+
+        return pt.X >= rect.Left && pt.X <= rect.Right && pt.Y >= rect.Top && pt.Y <= rect.Bottom;
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -181,7 +211,17 @@ public partial class App : Application
 
             _coordinator.Tick(now);
             _mainViewModel.Tick(now);
-            _stateMachine.Evaluate(now);
+
+            // 半透明状态下鼠标已移入窗口 → 立即恢复清晰（用户"移到界面上=要操作"）。
+            // 系统级判断（GetCursorPos + GetWindowRect，物理像素），不依赖 WPF 路由事件，可靠。
+            if (_stateMachine.CurrentState == WindowState.Glass && IsPointerInside(_mainWindow))
+            {
+                _stateMachine.RegisterInteraction(now);
+            }
+            else
+            {
+                _stateMachine.Evaluate(now);
+            }
 
             // 图标状态才渲染图标内容（省资源）
             if (_stateMachine.CurrentState == WindowState.Icon)
