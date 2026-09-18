@@ -32,7 +32,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="7">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="10">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -65,7 +65,7 @@
 
         <!-- 任务行容器（悬停反馈；过期任务红色底醒目） -->
         <Style x:Key="RowContainer" TargetType="Border">
-            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Margin" Value="4,1"/>
             <Setter Property="Padding" Value="4,0"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -80,10 +80,10 @@
         </Style>
     </views:ThemeWindow.Resources>
 
-    <!-- 外层圆角卡片 + 阴影（Apple：大表面用更深阴影建立层次） -->
-    <Border CornerRadius="16" Margin="10"
+    <!-- 外层大圆角卡片 + 阴影（FlClash：大圆角 20，无描边靠深浅分层） -->
+    <Border CornerRadius="20" Margin="10"
             Background="{DynamicResource ThemeSurface}"
-            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+            BorderThickness="0">
         <Border.Effect>
             <DropShadowEffect BlurRadius="24" ShadowDepth="4" Direction="270" Opacity="0.30" Color="#000000"/>
         </Border.Effect>
@@ -117,7 +117,7 @@
             <Border DockPanel.Dock="Top"
                     Visibility="{Binding HasDue, Converter={StaticResource BoolToVis}}"
                     Background="{DynamicResource ThemeDueSoft}"
-                    Margin="8,2,8,4" CornerRadius="8" Padding="10,5">
+                    Margin="8,2,8,4" CornerRadius="10" Padding="10,5">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" FontSize="12"
                                Foreground="{DynamicResource ThemeDue}" VerticalAlignment="Center" Margin="0,0,6,0"/>
