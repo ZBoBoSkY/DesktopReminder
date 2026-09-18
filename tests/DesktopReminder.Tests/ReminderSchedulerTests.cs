@@ -64,6 +64,37 @@ public class TaskSchedulerTests
         Assert.Equal(2, ReminderScheduler.CountDueOrOverdue(new[] { due, overdue, notDue, completed }, Now));
     }
 
+    [Fact]
+    public void CountDueOrOverdue_StillCountsTasksAlreadyMarkedDue()
+    {
+        // 任务被 Tick 标记为 Due 后，角标仍应统计它（排除的只有已完成）
+        var due = MakeTask("Due", TimeSpan.FromMinutes(1), Now.AddMinutes(-2));
+        due.UpdateStatus(Now); // 模拟 Tick 刷新：Active → Due
+
+        Assert.Equal(1, ReminderScheduler.CountDueOrOverdue(new[] { due }, Now));
+    }
+
+    [Fact]
+    public void EarliestDue_IncludesAlreadyDueTasks()
+    {
+        var due = MakeTask("Due", TimeSpan.FromMinutes(1), Now.AddMinutes(-2));
+        due.UpdateStatus(Now);
+        var next = MakeTask("Next", TimeSpan.FromMinutes(1), Now.AddMinutes(10));
+
+        // 已到期任务应优先显示（标签显示 00:00），而不是跳过它显示下一个
+        Assert.Same(due, ReminderScheduler.EarliestDue(new[] { next, due }));
+    }
+
+    [Fact]
+    public void EarliestDue_ExcludesCompleted()
+    {
+        var completed = MakeTask("Done", TimeSpan.FromMinutes(1), Now.AddMinutes(-5));
+        completed.MarkCompleted(Now);
+        var next = MakeTask("Next", TimeSpan.FromMinutes(1), Now.AddMinutes(10));
+
+        Assert.Same(next, ReminderScheduler.EarliestDue(new[] { completed, next }));
+    }
+
     [Theory]
     [InlineData(0, "0")]
     [InlineData(1, "1")]

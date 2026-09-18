@@ -3,6 +3,26 @@
 本文件记录每个版本的变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)（主版本.次版本.修订号）。
 
+## [v0.2.0] - 2026-09-19
+
+### 新增（应用层 Core）
+- 窗口三态状态机 `WindowStateMachine`：清晰 → 半透明 → 图标自动收起（超时可配置）、
+  悬停/点击立即回清晰、提醒打断（图标弹回半透明保持一段时间）、状态变化事件
+- 任务调度与提醒协调器 `ReminderCoordinator`：任务生命周期（新增/完成/稍后/恢复/删除）、
+  新到期立即提醒、过期任务按提醒间隔重复提醒（默认 5 分钟）、
+  图标数据（最早到期任务、角标数字）
+- 接口定义：`IAppNameProvider`（软件名识别）、`IReminderNotifier`（提醒出口）
+
+### 新增（基础设施 Infrastructure）
+- JSON 持久化：任务仓储 + 配置仓储（便携版原则，数据在软件目录）
+- 日志兜底 `FileLogger`：按天滚动，异常有据可查
+- 前台窗口软件名识别 `ForegroundAppNameProvider`：Windows API 取前台进程 +
+  内置 37 条中文映射表（explorer→文件管理器、doubaowork→豆包工作等）+ 用户自定义映射文件覆盖
+- 系统提示音提醒 `SystemReminderNotifier`（不引入音频文件，保持体积小）
+
+### 测试
+- 新增 31 个单元测试（状态机 9、协调器 12、持久化 6、调度语义 4），累计 **53 个全部通过**
+
 ## [v0.1.0] - 2026-09-18
 
 ### 新增

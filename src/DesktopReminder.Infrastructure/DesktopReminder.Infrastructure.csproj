@@ -2,6 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DesktopReminder.Domain\DesktopReminder.Domain.csproj" />
+    <ProjectReference Include="..\DesktopReminder.Core\DesktopReminder.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Windows.Extensions" Version="10.0.12" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -17,16 +17,24 @@ public static class ReminderScheduler
                     .ToList();
     }
 
-    /// <summary>最早到期的进行中任务；没有则返回 null</summary>
+    /// <summary>
+    /// 最早到期任务（未完成任务的 DueAt 最早者，含已到期/过期）；
+    /// 用于图标标签倒计时：有任务已过期就显示它（00:00），没有则显示下一个即将到期的。没有未完成任务返回 null。
+    /// </summary>
     public static ReminderTask? EarliestDue(IEnumerable<ReminderTask> tasks)
     {
-        return SortActiveByDue(tasks).FirstOrDefault();
+        return tasks.Where(t => t.Status != ReminderTaskStatus.Completed)
+                    .OrderBy(t => t.DueAt)
+                    .FirstOrDefault();
     }
 
-    /// <summary>到期 + 过期的任务总数（用于图标角标数字）</summary>
+    /// <summary>
+    /// 到期 + 过期任务总数（用于图标角标数字）。
+    /// 语义：所有未完成任务中已到点的（含已被标记为 Due 的），排除已完成。
+    /// </summary>
     public static int CountDueOrOverdue(IEnumerable<ReminderTask> tasks, DateTime now)
     {
-        return tasks.Count(t => t.Status == ReminderTaskStatus.Active && t.DueAt <= now);
+        return tasks.Count(t => t.Status != ReminderTaskStatus.Completed && t.DueAt <= now);
     }
 
     /// <summary>角标数字格式化：超过 9 显示「9+」</summary>
