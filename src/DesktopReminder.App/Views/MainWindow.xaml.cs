@@ -29,15 +29,25 @@ public partial class MainWindow : ThemeWindow
         InitializeComponent();
         DataContext = viewModel;
         Loaded += MainWindow_Loaded;
+
+        // 面板（已完成/已删除）展开或任务刷新后，重新自动测量高度，保证内容不被裁切。
+        // 用户拖右下角手动调大小后，WndProc 会切回 Manual；下次面板切换再回到自动高度。
+        viewModel.CompletedChanged += () =>
+        {
+            SizeToContent = SizeToContent.Height;
+        };
     }
 
-    /// <summary>出现动画（WPF Window 禁止设置 RenderTransform，用淡入实现柔和的材质到达感）</summary>
+    /// <summary>出现动画（WPF Window 禁止设置 RenderTransform，用淡入实现柔和的材质到达感；统一 spring 手感）</summary>
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         Opacity = 0;
-        var duration = TimeSpan.FromMilliseconds(240);
-        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
-        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, duration) { EasingFunction = ease });
+        const double response = 0.3;
+        var spring = new SpringEase { ResponseSeconds = response, DurationSeconds = response * 2 };
+        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromSeconds(response * 2))
+        {
+            EasingFunction = spring,
+        });
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)
@@ -111,6 +121,17 @@ public partial class MainWindow : ThemeWindow
     private void Window_MouseEnter(object sender, MouseEventArgs e) => InteractionOccurred?.Invoke();
 
     private void Window_Activated(object sender, EventArgs e) => InteractionOccurred?.Invoke();
+
+    /// <summary>点击到期提示条 → 收起历史面板、滚动到第一个到期任务（任务已按到期升序，即列表顶部）</summary>
+    private void DueBanner_Click(object sender, MouseButtonEventArgs e) => FocusFirstDueTask();
+
+    /// <summary>到期直达：收起历史面板 + 任务列表滚到顶（图标/托盘展开主界面时也调用）</summary>
+    public void FocusFirstDueTask()
+    {
+        var vm = (MainViewModel)DataContext;
+        vm.CollapseHistoryPanels();
+        TaskScroll.ScrollToTop();
+    }
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {

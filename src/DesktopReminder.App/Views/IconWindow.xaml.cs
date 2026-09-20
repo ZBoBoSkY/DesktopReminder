@@ -38,14 +38,17 @@ public partial class IconWindow : ThemeWindow
     }
 
     /// <summary>
-    /// 出现动画（WPF Window 禁止设置 RenderTransform，用快速淡入实现柔和的材质到达感）。
+    /// 出现动画（WPF Window 禁止设置 RenderTransform，用快速淡入实现柔和的材质到达感；统一 spring 手感）。
     /// </summary>
     private void IconWindow_Loaded(object sender, RoutedEventArgs e)
     {
         Opacity = 0;
-        var duration = TimeSpan.FromMilliseconds(200);
-        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
-        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, duration) { EasingFunction = ease });
+        const double response = 0.3;
+        var spring = new SpringEase { ResponseSeconds = response, DurationSeconds = response * 2 };
+        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromSeconds(response * 2))
+        {
+            EasingFunction = spring,
+        });
     }
 
     /// <summary>

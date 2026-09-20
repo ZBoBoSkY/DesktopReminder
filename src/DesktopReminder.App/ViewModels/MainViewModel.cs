@@ -205,4 +205,11 @@ public sealed class MainViewModel : ObservableObject
             CompletedPanelVisible = false;
         }
     }
+
+    /// <summary>收起历史面板（到期直达时调用，避免遮挡任务列表）</summary>
+    public void CollapseHistoryPanels()
+    {
+        CompletedPanelVisible = false;
+        DeletedPanelVisible = false;
+    }
 }

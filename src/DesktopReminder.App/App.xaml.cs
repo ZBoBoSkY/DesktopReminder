@@ -283,16 +283,23 @@ public partial class App : Application
         if (forceActive)
         {
             _mainWindow.Activate();
+            // 用户从图标/托盘点进来：如有到期任务，直达第一个（收起历史面板+滚到顶）
+            _mainWindow.FocusFirstDueTask();
         }
     }
 
-    /// <summary>不透明度渐变（旧版「突然变半透明」的柔化修复，冻结需求 R3.4）</summary>
+    /// <summary>
+    /// 不透明度过渡（A2：临界阻尼弹簧，响应 0.35s、时长 0.7s，快速起步、平滑落定、无过冲）。
+    /// A1 可中断性由 WPF 动画系统保证：BeginAnimation 未设 From 时，每次都从"当前显示值"继续，
+    /// 所以用户在过渡中途移入鼠标/触发交互，会从当前不透明度平滑接回，绝不闪断。
+    /// </summary>
     private void AnimateMainOpacity(double target)
     {
-        var animation = new DoubleAnimation(target, TimeSpan.FromMilliseconds(450))
+        const double response = 0.35;
+        var spring = new SpringEase { ResponseSeconds = response, DurationSeconds = response * 2 };
+        var animation = new DoubleAnimation(target, TimeSpan.FromSeconds(response * 2))
         {
-            AccelerationRatio = 0.3,
-            DecelerationRatio = 0.3,
+            EasingFunction = spring,
         };
         _mainWindow.BeginAnimation(UIElement.OpacityProperty, animation);
     }
