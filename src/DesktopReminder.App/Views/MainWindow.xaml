@@ -14,10 +14,7 @@
         <views:InvertBoolToVisibilityConverter x:Key="InvertBoolToVis"/>
         <views:DueForegroundConverter x:Key="DueForeground"/>
 
-        <!-- 图标字体（系统矢量图标，非 emoji，随主题换色） -->
-        <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
-
-        <!-- 标题栏按钮（Apple 风格：悬停微亮、按下即反馈缩放） -->
+        <!-- 标题栏按钮（Fluent 风格：圆角 4，悬停淡底、按下轻缩放）；图标字体 IconFont 见 App.xaml -->
         <Style x:Key="TitleButton" TargetType="Button">
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="30"/>
@@ -25,14 +22,14 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ThemeSecondaryText}"/>
             <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="10">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusControl}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -45,7 +42,7 @@
                                 <Setter TargetName="bd" Property="RenderTransformOrigin" Value="0.5,0.5"/>
                                 <Setter TargetName="bd" Property="RenderTransform">
                                     <Setter.Value>
-                                        <ScaleTransform ScaleX="0.9" ScaleY="0.9"/>
+                                        <ScaleTransform ScaleX="0.94" ScaleY="0.94"/>
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
@@ -64,7 +61,7 @@
 
         <!-- 任务行容器（悬停反馈；过期任务红色底醒目） -->
         <Style x:Key="RowContainer" TargetType="Border">
-            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RadiusControl}"/>
             <Setter Property="Margin" Value="4,1"/>
             <Setter Property="Padding" Value="4,0"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -79,12 +76,12 @@
         </Style>
     </views:ThemeWindow.Resources>
 
-    <!-- 外层大圆角卡片 + 阴影（FlClash：大圆角 20，无描边靠深浅分层） -->
-    <Border CornerRadius="20" Margin="0"
+    <!-- 外层卡片（Fluent：圆角 8 + 1px 细描边 + 柔和投影） -->
+    <Border CornerRadius="{StaticResource RadiusOverlay}" Margin="0"
             Background="{DynamicResource ThemeSurface}"
-            BorderThickness="0">
+            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Direction="270" Opacity="0.30" Color="#000000"/>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.20" Color="#000000"/>
         </Border.Effect>
         <!-- Grid 布局：进行中任务用 * 高度永远优先占空间，面板放下面，窗口再矮也先保进行中任务可见 -->
         <Grid>
@@ -105,7 +102,7 @@
                         <Ellipse Width="9" Height="9" Fill="{DynamicResource ThemeAccent}" Margin="0,0,9,0" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding TitleText}"
                                    Foreground="{DynamicResource ThemeForeground}"
-                                   FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                   FontSize="{StaticResource FontBody}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
                         <Button Style="{StaticResource TitleButton}" Content="&#xE710;" ToolTip="新建任务"
@@ -124,26 +121,26 @@
             <Border Grid.Row="1"
                     Visibility="{Binding HasDue, Converter={StaticResource BoolToVis}}"
                     Background="{DynamicResource ThemeDueSoft}"
-                    Margin="8,2,8,4" CornerRadius="10" Padding="10,5"
+                    Margin="8,4,8,4" CornerRadius="{StaticResource RadiusControl}" Padding="10,6"
                     MouseLeftButtonDown="DueBanner_Click" Cursor="Hand" ToolTip="点击查看到期任务">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                    <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" FontSize="14"
                                Foreground="{DynamicResource ThemeDue}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock Text="{Binding DueBannerText}"
-                               Foreground="{DynamicResource ThemeDue}" FontSize="12" FontWeight="SemiBold"/>
+                               Foreground="{DynamicResource ThemeDue}" FontSize="{StaticResource FontCaption}" FontWeight="SemiBold"/>
                 </StackPanel>
             </Border>
 
             <!-- ============ 已删除面板 ============ -->
             <Border Grid.Row="4" Visibility="{Binding DeletedPanelVisible, Converter={StaticResource BoolToVis}}"
                     BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,1,0,0"
-                    CornerRadius="0,0,20,20"
+                    CornerRadius="0,0,8,8"
                     Background="{DynamicResource ThemeBackground}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="已删除（可恢复）"
-                               Foreground="{DynamicResource ThemeSecondaryText}" FontSize="11"
+                               Foreground="{DynamicResource ThemeSecondaryText}" FontSize="{StaticResource FontCaption}" FontWeight="SemiBold"
                                Margin="16,8,0,4"/>
-                    <TextBlock DockPanel.Dock="Top" Text="已删除库为空" FontSize="11" Margin="16,2,0,4"
+                    <TextBlock DockPanel.Dock="Top" Text="已删除库为空" FontSize="{StaticResource FontCaption}" Margin="16,2,0,4"
                                Foreground="{DynamicResource ThemeSecondaryText}" Opacity="0.6"
                                Visibility="{Binding HasDeleted, Converter={StaticResource InvertBoolToVis}}"/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="72">
@@ -163,12 +160,12 @@
                                                     <ColumnDefinition Width="30"/>
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                                                    <TextBlock Text="{Binding AppName}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="12"/>
-                                                    <TextBlock Text="{Binding Note, StringFormat= · {0}}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="11"
+                                                    <TextBlock Text="{Binding AppName}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="13"/>
+                                                    <TextBlock Text="{Binding Note, StringFormat= · {0}}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="{StaticResource FontCaption}"
                                                                Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Style="{StaticResource RowButton}" Content="恢复"
-                                                        FontFamily="Microsoft YaHei"
+                                                        FontFamily="{StaticResource UIFont}"
                                                         Command="{Binding RestoreCommand}"/>
                                                 <Button Grid.Column="2" Style="{StaticResource RowButton}" Content="&#xE74D;"
                                                         ToolTip="彻底删除" Foreground="{DynamicResource ThemeDue}"
@@ -188,13 +185,13 @@
             <!-- ============ 已完成面板 ============ -->
             <Border Grid.Row="3" Visibility="{Binding CompletedPanelVisible, Converter={StaticResource BoolToVis}}"
                     BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,1,0,0"
-                    CornerRadius="0,0,20,20"
+                    CornerRadius="0,0,8,8"
                     Background="{DynamicResource ThemeBackground}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="已完成（可恢复激活）"
-                               Foreground="{DynamicResource ThemeSecondaryText}" FontSize="11"
+                               Foreground="{DynamicResource ThemeSecondaryText}" FontSize="{StaticResource FontCaption}" FontWeight="SemiBold"
                                Margin="16,8,0,4"/>
-                    <TextBlock DockPanel.Dock="Top" Text="已完成库为空" FontSize="11" Margin="16,2,0,4"
+                    <TextBlock DockPanel.Dock="Top" Text="已完成库为空" FontSize="{StaticResource FontCaption}" Margin="16,2,0,4"
                                Foreground="{DynamicResource ThemeSecondaryText}" Opacity="0.6"
                                Visibility="{Binding HasCompleted, Converter={StaticResource InvertBoolToVis}}"/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="72">
@@ -214,14 +211,14 @@
                                                     <ColumnDefinition Width="30"/>
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                                                    <TextBlock Text="{Binding AppName}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="12"/>
-                                                    <TextBlock Text="{Binding Note, StringFormat= · {0}}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="11"
+                                                    <TextBlock Text="{Binding AppName}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="13"/>
+                                                    <TextBlock Text="{Binding Note, StringFormat= · {0}}" Foreground="{DynamicResource ThemeSecondaryText}" FontSize="{StaticResource FontCaption}"
                                                                Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}"/>
-                                                    <TextBlock Text=" · 完成于 " Foreground="{DynamicResource ThemeSecondaryText}" FontSize="11"/>
-                                                    <TextBlock Text="{Binding CompletedAtText}" Foreground="{DynamicResource ThemeActive}" FontSize="11" FontWeight="SemiBold"/>
+                                                    <TextBlock Text=" · 完成于 " Foreground="{DynamicResource ThemeSecondaryText}" FontSize="{StaticResource FontCaption}"/>
+                                                    <TextBlock Text="{Binding CompletedAtText}" Foreground="{DynamicResource ThemeActive}" FontSize="{StaticResource FontCaption}" FontWeight="SemiBold"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Style="{StaticResource RowButton}" Content="激活"
-                                                        FontFamily="Microsoft YaHei"
+                                                        FontFamily="{StaticResource UIFont}"
                                                         ToolTip="重新激活此任务" Command="{Binding RestoreCommand}"/>
                                                 <Button Grid.Column="2" Style="{StaticResource RowButton}" Content="&#xE74D;"
                                                         ToolTip="删除（可恢复）" Command="{Binding DeleteCommand}"/>
@@ -260,8 +257,9 @@
                                             <!-- 第一列：倒计时（双击新建，冻结需求） -->
                                             <!-- 颜色用 DynamicResource + DataTrigger：主题切换自动刷新（旧版 converter 求值一次，暗色主题下倒计时是黑的） -->
                                             <TextBlock Grid.Column="0" Text="{Binding CountdownText}"
-                                                       FontSize="14" FontWeight="SemiBold"
-                                                       FontFamily="Consolas, Microsoft YaHei"
+                                                       FontSize="15" FontWeight="SemiBold"
+                                                       FontFamily="{StaticResource DisplayFont}"
+                                                       Typography.NumeralAlignment="Tabular"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
                                                        MouseLeftButtonDown="Countdown_MouseLeftButtonDown">
                                                 <TextBlock.Style>
@@ -279,8 +277,8 @@
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{Binding AppName}"
-                                                               Foreground="{DynamicResource ThemeForeground}" FontSize="13"
-                                                               FontWeight="SemiBold" LineHeight="21"
+                                                               Foreground="{DynamicResource ThemeForeground}" FontSize="{StaticResource FontBody}"
+                                                               FontWeight="SemiBold" LineHeight="20"
                                                                TextTrimming="CharacterEllipsis"/>
                                                     <!-- 状态圆点：绿=倒计时中 / 红=已到期 -->
                                                     <Ellipse Width="5" Height="5" Margin="6,0,0,0" VerticalAlignment="Center">
@@ -297,8 +295,8 @@
                                                     </Ellipse>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Note}"
-                                                           Foreground="{DynamicResource ThemeSecondaryText}" FontSize="11"
-                                                           LineHeight="17"
+                                                           Foreground="{DynamicResource ThemeSecondaryText}" FontSize="{StaticResource FontCaption}"
+                                                           LineHeight="16"
                                                            TextTrimming="CharacterEllipsis"
                                                            Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}"/>
                                             </StackPanel>
@@ -306,7 +304,7 @@
                                             <Button Grid.Column="2" Style="{StaticResource RowButton}" Content="&#xE73E;"
                                                     ToolTip="完成任务" Command="{Binding CompleteCommand}"/>
                                             <Button Grid.Column="3" Style="{StaticResource RowButton}" Content="稍后"
-                                                    FontFamily="Microsoft YaHei"
+                                                    FontFamily="{StaticResource UIFont}"
                                                     ToolTip="稍后提醒" Command="{Binding SnoozeCommand}"/>
                                         </Grid>
                                         <Rectangle Grid.Row="1" Height="1" Fill="{DynamicResource ThemeBorder}"
@@ -323,7 +321,7 @@
                                 MouseLeftButtonDown="EmptyHint_MouseLeftButtonDown"
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Cursor="Hand">
-                        <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}"
                                    FontSize="36" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource ThemeSecondaryText}" Opacity="0.4">
                             <TextBlock.Style>
