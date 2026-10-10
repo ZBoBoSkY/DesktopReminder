@@ -14,6 +14,7 @@ public sealed class MainViewModel : ObservableObject
 {
     private readonly ReminderCoordinator _coordinator;
     private readonly IAppNameProvider _appNameProvider;
+    private HashSet<Guid> _lastActiveIds = new();
     private bool _completedPanelVisible;
     private bool _deletedPanelVisible;
     private bool _hasCompleted;
@@ -181,6 +182,11 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>从协调器全量同步任务列表（新增/完成/恢复/删除后调用）</summary>
     public void RefreshFromCoordinator()
     {
+        // 记录本次进行中任务 ID，与上次对比 → 新出现的任务播放"从上方滑入"动画（第 5 步动效）
+        var newIds = new HashSet<Guid>(ReminderScheduler.SortActiveByDue(_coordinator.Tasks)
+            .Select(t => t.Id)
+            .Where(id => !_lastActiveIds.Contains(id)));
+
         ActiveTasks.Clear();
         CompletedTasks.Clear();
         DeletedTasks.Clear();
@@ -188,7 +194,7 @@ public sealed class MainViewModel : ObservableObject
         // 进行中按到期时间升序（最早到期在最上，冻结需求 R1.16）
         foreach (var task in ReminderScheduler.SortActiveByDue(_coordinator.Tasks))
         {
-            ActiveTasks.Add(CreateItem(task));
+            ActiveTasks.Add(CreateItem(task, newIds.Contains(task.Id)));
         }
 
         foreach (var task in _coordinator.Tasks.Where(t => t.Status == ReminderTaskStatus.Completed))
@@ -200,6 +206,8 @@ public sealed class MainViewModel : ObservableObject
         {
             DeletedTasks.Add(CreateItem(task));
         }
+
+        _lastActiveIds = new HashSet<Guid>(ActiveTasks.Select(t => t.Task.Id));
 
         HasCompleted = CompletedTasks.Count > 0;
         HasDeleted = DeletedTasks.Count > 0;
@@ -221,7 +229,7 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private TaskItemViewModel CreateItem(ReminderTask task)
+    private TaskItemViewModel CreateItem(ReminderTask task, bool isNew = false)
     {
         var isDeleted = task.Status == ReminderTaskStatus.Deleted;
         return new TaskItemViewModel(
@@ -234,7 +242,8 @@ public sealed class MainViewModel : ObservableObject
             onDelete: isDeleted
                 ? t => RequestHardDelete?.Invoke(t)
                 : t => RequestDelete?.Invoke(t),
-            onJumpBack: t => RequestJumpBack?.Invoke(t));
+            onJumpBack: t => RequestJumpBack?.Invoke(t),
+            isNew: isNew);
     }
 
     /// <summary>稍后/删除需要确认弹窗（由窗口层实现，含固定选项）</summary>

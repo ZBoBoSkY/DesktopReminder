@@ -17,6 +17,7 @@ public sealed class TaskItemViewModel : ObservableObject
     private readonly Action<ReminderTask> _onJumpBack;
     private string _countdownText = "--:--";
     private bool _isDue;
+    private bool _isNearDue;
 
     public ReminderTask Task { get; }
 
@@ -26,7 +27,8 @@ public sealed class TaskItemViewModel : ObservableObject
         Action<ReminderTask> onSnooze,
         Action<ReminderTask> onRestore,
         Action<ReminderTask> onDelete,
-        Action<ReminderTask> onJumpBack)
+        Action<ReminderTask> onJumpBack,
+        bool isNew = false)
     {
         Task = task;
         _onComplete = onComplete;
@@ -34,6 +36,7 @@ public sealed class TaskItemViewModel : ObservableObject
         _onRestore = onRestore;
         _onDelete = onDelete;
         _onJumpBack = onJumpBack;
+        IsNew = isNew;
         CompleteCommand = new RelayCommand(_ => _onComplete(Task));
         SnoozeCommand = new RelayCommand(_ => _onSnooze(Task));
         RestoreCommand = new RelayCommand(_ => _onRestore(Task));
@@ -67,6 +70,19 @@ public sealed class TaskItemViewModel : ObservableObject
         private set => SetProperty(ref _isDue, value);
     }
 
+    /// <summary>是否进入最后 60 秒（未到期但临近：数字变红提示，第 5 步动效）</summary>
+    public bool IsNearDue
+    {
+        get => _isNearDue;
+        private set => SetProperty(ref _isNearDue, value);
+    }
+
+    /// <summary>本轮刷新时新出现的任务（仅用于播放一次"从上方滑入"动画，播放后即置 false）</summary>
+    public bool IsNew { get; private set; }
+
+    /// <summary>滑入动画播放后调用，防止重复触发</summary>
+    public void MarkNewPlayed() => IsNew = false;
+
     public RelayCommand CompleteCommand { get; }
     public RelayCommand SnoozeCommand { get; }
     public RelayCommand RestoreCommand { get; }
@@ -81,5 +97,7 @@ public sealed class TaskItemViewModel : ObservableObject
     {
         CountdownText = ReminderScheduler.FormatCountdown(Task.Remaining(now));
         IsDue = Task.Status != ReminderTaskStatus.Completed && Task.DueAt <= now;
+        var remaining = Task.Status == ReminderTaskStatus.Completed ? double.MaxValue : Task.Remaining(now).TotalSeconds;
+        IsNearDue = !IsDue && remaining is > 0 and <= 60;
     }
 }

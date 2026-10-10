@@ -144,6 +144,72 @@ public partial class MainWindow : ThemeWindow
         }
     }
 
+    /// <summary>新任务行首次出现：从上方滑入 + 淡入（第 5 步动效，只播一次）</summary>
+    private void TaskRow_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement row ||
+            row.DataContext is not TaskItemViewModel item ||
+            !item.IsNew)
+        {
+            return;
+        }
+
+        item.MarkNewPlayed();
+
+        row.Opacity = 0;
+        var transform = new TranslateTransform(0, -16);
+        row.RenderTransform = transform;
+
+        var spring = new SpringEase { ResponseSeconds = 0.35, DurationSeconds = 0.7 };
+        transform.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(380))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+        });
+        row.BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(280))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+        });
+    }
+
+    /// <summary>完成按钮：行先淡出收起（220ms），动画结束后才真正完成任务（第 5 步动效）</summary>
+    private void CompleteButton_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+
+        if ((sender as FrameworkElement)?.DataContext is not TaskItemViewModel item)
+        {
+            return;
+        }
+
+        var row = FindAncestor<Border>(sender as DependencyObject);
+        if (row is null)
+        {
+            item.CompleteCommand.Execute(null);
+            return;
+        }
+
+        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn },
+        };
+        fade.Completed += (_, _) => item.CompleteCommand.Execute(null);
+        row.BeginAnimation(OpacityProperty, fade);
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            current = System.Windows.Media.VisualTreeHelper.GetParent(current);
+            if (current is T match)
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>内联新建输入框键盘：回车保存、Esc 取消（全程键盘可完成）</summary>
     private void InlineInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {

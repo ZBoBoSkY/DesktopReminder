@@ -371,7 +371,7 @@
                     <ItemsControl ItemsSource="{Binding ActiveTasks}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource RowContainer}">
+                                <Border Style="{StaticResource RowContainer}" Loaded="TaskRow_Loaded">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*"/>
@@ -432,6 +432,10 @@
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}"/>
                                                         <Style.Triggers>
+                                                            <!-- 最后 60 秒：数字变红提示（第 5 步动效） -->
+                                                            <DataTrigger Binding="{Binding IsNearDue}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource ThemeDue}"/>
+                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsDue}" Value="True">
                                                                 <Setter Property="Foreground" Value="{DynamicResource ThemeDue}"/>
                                                             </DataTrigger>
@@ -445,7 +449,7 @@
                                                         Visibility="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}, Converter={StaticResource BoolToVis}}">
                                                 <Button Style="{StaticResource RowButton}" Content="&#xE73E;"
                                                         Foreground="{DynamicResource ThemeActive}"
-                                                        ToolTip="完成任务" Command="{Binding CompleteCommand}"/>
+                                                        ToolTip="完成任务" Click="CompleteButton_Click"/>
                                                 <Button Style="{StaticResource RowButton}" Content="稍后"
                                                         ToolTip="稍后提醒" Command="{Binding SnoozeCommand}"/>
                                                 <Button Style="{StaticResource RowButton}" Content="&#xE74D;"

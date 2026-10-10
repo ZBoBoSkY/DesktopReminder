@@ -270,7 +270,18 @@ public partial class App : Application
         var badge = _coordinator.CountDue(now);
         var hasOverdue = earliest is not null && earliest.DueAt <= now;
 
-        _iconWindow.Refresh(countdown, badge, hasOverdue);
+        // 进度环：最早到期任务剩余时间占比（0..1，过期归零）
+        double progress = 0;
+        if (earliest is not null)
+        {
+            var totalSeconds = earliest.Duration.TotalSeconds;
+            if (totalSeconds > 0)
+            {
+                progress = Math.Clamp(earliest.Remaining(now).TotalSeconds / totalSeconds, 0, 1);
+            }
+        }
+
+        _iconWindow.Refresh(countdown, badge, hasOverdue, progress);
         _tray.RefreshBadge(badge, hasOverdue);
     }
 

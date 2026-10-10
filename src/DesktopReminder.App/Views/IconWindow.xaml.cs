@@ -31,6 +31,7 @@ public partial class IconWindow : ThemeWindow
     private Point _dragScreenStart;
     private Point _winStart;
     private bool _moved;
+    private bool _lastOverdue;
 
     public IconWindow()
     {
@@ -53,20 +54,32 @@ public partial class IconWindow : ThemeWindow
 
     /// <summary>
     /// 刷新图标内容（App 每秒调用）。
-    /// 有任务 → 圆形 + 右侧标签（按文本宽度动态调整窗口宽）；无任务 → 纯圆形。
+    /// 有任务 → 圆形 + 一体式标签（按文本宽度动态调整窗口宽）；无任务 → 纯圆形。
     /// 拖拽期间完全跳过刷新（窗口移动中改尺寸/内容会与鼠标坐标系互相干扰 → 晃动）。
     /// </summary>
-    public void Refresh(string? countdownText, int badgeCount, bool hasOverdue)
+    /// <param name="countdownText">最早到期任务倒计时文本；null/空表示无任务</param>
+    /// <param name="badgeCount">角标数字（到期+过期数）</param>
+    /// <param name="hasOverdue">是否有过期任务（整体变红 + 轻微放大脉冲一次）</param>
+    /// <param name="progress">最早到期任务剩余时间占比 0..1（进度环）</param>
+    public void Refresh(string? countdownText, int badgeCount, bool hasOverdue, double progress)
     {
         if (_dragging)
         {
             return; // 拖拽中保持完全静止；松手后下一个心跳自然恢复
         }
 
+        // 从"无过期"变"有过期"的瞬间：轻微放大脉冲（弹簧），提醒注意
+        if (hasOverdue && !_lastOverdue)
+        {
+            PlayOverduePulse();
+        }
+
+        _lastOverdue = hasOverdue;
+
         var visual = new System.Windows.Media.DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            AppIconFactory.DrawIcon(dc, countdownText, badgeCount, hasOverdue,
+            AppIconFactory.DrawIcon(dc, countdownText, badgeCount, hasOverdue, progress,
                 CircleSize, Width, Height, ThemeManager.Current);
         }
 
@@ -86,6 +99,23 @@ public partial class IconWindow : ThemeWindow
         IconImage.Source = AppIconFactory.Render(visual, (int)Width, (int)Height);
         IconImage.Width = Width;
         IconImage.Height = Height;
+    }
+
+    /// <summary>到期瞬间的轻微放大脉冲（弹簧，约 0.5s）：1.0 → 1.08 → 回落 1.0</summary>
+    private void PlayOverduePulse()
+    {
+        var transform = new System.Windows.Media.ScaleTransform(1.0, 1.0);
+        IconImage.RenderTransform = transform;
+        IconImage.RenderTransformOrigin = new Point(0.5, 0.5);
+
+        var response = 0.4;
+        var spring = new SpringEase { ResponseSeconds = response, DurationSeconds = response * 2 };
+        var up = new DoubleAnimation(1.08, TimeSpan.FromSeconds(0.12)) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
+        var down = new DoubleAnimation(1.0, TimeSpan.FromSeconds(0.4)) { EasingFunction = spring, BeginTime = TimeSpan.FromSeconds(0.12) };
+        transform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, up);
+        transform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, up);
+        transform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, down);
+        transform.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, down);
     }
 
     private void IconWindow_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
