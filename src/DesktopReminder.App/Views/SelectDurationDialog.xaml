@@ -8,14 +8,12 @@
         Foreground="{DynamicResource ThemeForeground}">
 
     <StackPanel Margin="18,16,18,16">
-        <TextBlock x:Name="TitleText" Text="稍后多久提醒？" FontSize="15" FontWeight="Bold"
+        <TextBlock x:Name="TitleText" Text="稍后多久提醒？" FontSize="{StaticResource FontSubtitle}" FontWeight="SemiBold"
                    Foreground="{DynamicResource ThemeForeground}" Margin="0,0,0,14"/>
 
         <UniformGrid x:Name="OptionGrid" Columns="2" Rows="2"/>
 
-        <Button Content="取消" Width="76" Height="30" HorizontalAlignment="Right" Margin="0,18,0,0"
-                Background="{DynamicResource ThemeSurface}" Foreground="{DynamicResource ThemeForeground}"
-                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+        <Button Content="取消" MinWidth="80" Height="32" HorizontalAlignment="Right" Margin="0,18,0,0"
                 Click="Cancel_Click"/>
     </StackPanel>
 </views:ThemeWindow>
