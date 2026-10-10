@@ -21,6 +21,10 @@ public partial class DueNotifyWindow : ThemeWindow
         InitializeComponent();
         _onComplete = onComplete;
         _onSnooze = onSnooze;
+
+        // 主题资源在构造函数里立即注册：Refresh 会在 Show() 之前构建行（FindResource 主题色），
+        // 不能等到 Loaded 才注册，否则首次刷新就抛「资源找不到」异常、弹窗永不显示。
+        ApplyTheme();
     }
 
     /// <summary>刷新内容并显示；到期任务为空时自动隐藏</summary>

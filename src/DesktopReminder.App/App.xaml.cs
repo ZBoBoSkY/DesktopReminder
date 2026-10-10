@@ -374,7 +374,14 @@ public partial class App : Application
                 });
         }
 
-        _dueWindow.Refresh(due);
+        try
+        {
+            _dueWindow.Refresh(due);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("到期弹窗刷新失败", ex);
+        }
     }
 
     /// <summary>点任务行 → 一键跳回该任务对应的软件窗口（进程名匹配，最小化先还原）</summary>
@@ -413,6 +420,7 @@ public partial class App : Application
             }
 
             _logger.Info($"未找到可跳回的窗口：{task.ProcessName}");
+            _tray.ShowBalloon("无法跳回", $"未找到「{task.AppName}」的窗口（软件可能已关闭）");
         }
         catch (Exception ex)
         {
