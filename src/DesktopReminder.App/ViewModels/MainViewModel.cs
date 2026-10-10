@@ -233,12 +233,16 @@ public sealed class MainViewModel : ObservableObject
                 : t => { _coordinator.RestoreTask(t.Id); RefreshFromCoordinator(); },
             onDelete: isDeleted
                 ? t => RequestHardDelete?.Invoke(t)
-                : t => RequestDelete?.Invoke(t));
+                : t => RequestDelete?.Invoke(t),
+            onJumpBack: t => RequestJumpBack?.Invoke(t));
     }
 
     /// <summary>稍后/删除需要确认弹窗（由窗口层实现，含固定选项）</summary>
     public event Action<ReminderTask>? RequestSnooze;
     public event Action<ReminderTask>? RequestDelete;
+
+    /// <summary>点任务行跳回对应软件窗口（由窗口层实现，旧任务无进程名则忽略）</summary>
+    public event Action<ReminderTask>? RequestJumpBack;
 
     /// <summary>已删除库的「彻底删除」（不可恢复，仍需确认）</summary>
     public event Action<ReminderTask>? RequestHardDelete;

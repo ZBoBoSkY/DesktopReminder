@@ -14,6 +14,7 @@ public sealed class TaskItemViewModel : ObservableObject
     private readonly Action<ReminderTask> _onSnooze;
     private readonly Action<ReminderTask> _onRestore;
     private readonly Action<ReminderTask> _onDelete;
+    private readonly Action<ReminderTask> _onJumpBack;
     private string _countdownText = "--:--";
     private bool _isDue;
 
@@ -24,17 +25,20 @@ public sealed class TaskItemViewModel : ObservableObject
         Action<ReminderTask> onComplete,
         Action<ReminderTask> onSnooze,
         Action<ReminderTask> onRestore,
-        Action<ReminderTask> onDelete)
+        Action<ReminderTask> onDelete,
+        Action<ReminderTask> onJumpBack)
     {
         Task = task;
         _onComplete = onComplete;
         _onSnooze = onSnooze;
         _onRestore = onRestore;
         _onDelete = onDelete;
+        _onJumpBack = onJumpBack;
         CompleteCommand = new RelayCommand(_ => _onComplete(Task));
         SnoozeCommand = new RelayCommand(_ => _onSnooze(Task));
         RestoreCommand = new RelayCommand(_ => _onRestore(Task));
         DeleteCommand = new RelayCommand(_ => _onDelete(Task));
+        JumpBackCommand = new RelayCommand(_ => _onJumpBack(Task), _ => HasProcessName);
     }
 
     public string AppName => Task.AppName;
@@ -67,6 +71,10 @@ public sealed class TaskItemViewModel : ObservableObject
     public RelayCommand SnoozeCommand { get; }
     public RelayCommand RestoreCommand { get; }
     public RelayCommand DeleteCommand { get; }
+
+    /// <summary>一键跳回该任务对应的软件窗口（需要进程名；旧任务无进程名则不可跳回）</summary>
+    public RelayCommand JumpBackCommand { get; }
+    public bool HasProcessName => !string.IsNullOrWhiteSpace(Task.ProcessName);
 
     /// <summary>每秒刷新倒计时与到期状态</summary>
     public void Refresh(DateTime now)

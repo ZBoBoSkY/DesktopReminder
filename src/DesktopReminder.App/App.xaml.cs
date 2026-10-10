@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
@@ -71,6 +73,15 @@ public partial class App : Application
 
     [DllImport("user32.dll")]
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
 
     /// <summary>鼠标物理坐标是否落在窗口矩形内（半透明状态恢复清晰的系统级兜底）</summary>
     private static bool IsPointerInside(Window window)
@@ -186,6 +197,7 @@ public partial class App : Application
         _mainViewModel.RequestSnooze += ShowSnoozeOptions;
         _mainViewModel.RequestDelete += DeleteTaskWithConfirm;
         _mainViewModel.RequestHardDelete += HardDeleteWithConfirm;
+        _mainViewModel.RequestJumpBack += JumpBackToWindow;
 
         // 图标窗口
         _iconWindow.RequestOpenMain += () =>
@@ -327,8 +339,85 @@ public partial class App : Application
             _stateMachine.InterruptForReminder(DateTime.Now);
         }
 
-        _tray.ShowBalloon("任务到期", $"{dueTasks.Count} 项任务需要处理");
         _mainViewModel.RefreshFromCoordinator();
+
+        // 自制到期通知弹窗（非系统 Toast）：列出全部到期任务，可直接完成/稍后
+        ShowDueWindow();
+    }
+
+    // ---------- 第 4 步：到期弹窗 + 一键跳回 ----------
+
+    private DueNotifyWindow? _dueWindow;
+
+    /// <summary>显示（或刷新）右下角到期通知弹窗；没有到期任务时自动隐藏</summary>
+    private void ShowDueWindow()
+    {
+        var due = _coordinator.Tasks.Where(t => t.Status == ReminderTaskStatus.Due).ToList();
+        if (due.Count == 0)
+        {
+            _dueWindow?.Hide();
+            return;
+        }
+
+        if (_dueWindow is null)
+        {
+            _dueWindow = new DueNotifyWindow(
+                onComplete: task =>
+                {
+                    _coordinator.CompleteTask(task.Id);
+                    _mainViewModel.RefreshFromCoordinator();
+                },
+                onSnooze: (task, minutes) =>
+                {
+                    _coordinator.SnoozeTask(task.Id, TimeSpan.FromMinutes(minutes));
+                    _mainViewModel.RefreshFromCoordinator();
+                });
+        }
+
+        _dueWindow.Refresh(due);
+    }
+
+    /// <summary>点任务行 → 一键跳回该任务对应的软件窗口（进程名匹配，最小化先还原）</summary>
+    private void JumpBackToWindow(ReminderTask task)
+    {
+        if (string.IsNullOrWhiteSpace(task.ProcessName))
+        {
+            return; // 旧任务无进程名，无法跳回
+        }
+
+        try
+        {
+            foreach (var process in Process.GetProcessesByName(task.ProcessName))
+            {
+                try
+                {
+                    var hwnd = process.MainWindowHandle;
+                    if (hwnd == IntPtr.Zero)
+                    {
+                        continue;
+                    }
+
+                    if (IsIconic(hwnd))
+                    {
+                        ShowWindowAsync(hwnd, 9 /* SW_RESTORE */);
+                    }
+
+                    SetForegroundWindow(hwnd);
+                    _stateMachine.RegisterInteraction(DateTime.Now);
+                    return;
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+
+            _logger.Info($"未找到可跳回的窗口：{task.ProcessName}");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("跳回软件窗口失败", ex);
+        }
     }
 
     // ---------- 动作 ----------

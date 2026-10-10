@@ -1,0 +1,38 @@
+<views:ThemeWindow x:Class="DesktopReminder.App.Views.DueNotifyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:DesktopReminder.App.Views"
+        Title="任务到期" Width="320" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStyle="None" Topmost="True" ShowInTaskbar="False"
+        Background="{DynamicResource ThemeBackground}"
+        Foreground="{DynamicResource ThemeForeground}">
+
+    <Border Margin="10" CornerRadius="14" Background="{DynamicResource ThemeSurface}"
+            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+            Padding="14,12">
+        <StackPanel>
+            <!-- 标题行：N 项任务到期 + 关闭 -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="16" Foreground="{DynamicResource ThemeDue}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock x:Name="TitleText" Text="任务到期" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ThemeForeground}"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        FontSize="12" Width="28" Height="28"
+                        Background="Transparent" BorderThickness="0"
+                        Foreground="{DynamicResource ThemeSecondaryText}"
+                        ToolTip="关闭提醒" Click="Close_Click"/>
+            </Grid>
+
+            <!-- 到期任务列表（代码构建，每行：名称 + 备注 + 完成/稍后5/稍后10） -->
+            <StackPanel x:Name="ListPanel" Margin="0,10,0,0"/>
+        </StackPanel>
+    </Border>
+</views:ThemeWindow>

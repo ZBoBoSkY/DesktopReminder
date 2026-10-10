@@ -129,6 +129,21 @@ public partial class MainWindow : ThemeWindow
 
     private void Window_Activated(object sender, EventArgs e) => InteractionOccurred?.Invoke();
 
+    /// <summary>点任务行图标/名称区 → 一键跳回该任务对应的软件窗口（第 4 步）</summary>
+    private void TaskJump_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 1)
+        {
+            return;
+        }
+
+        if ((sender as FrameworkElement)?.DataContext is TaskItemViewModel item &&
+            item.JumpBackCommand.CanExecute(null))
+        {
+            item.JumpBackCommand.Execute(null);
+        }
+    }
+
     /// <summary>内联新建输入框键盘：回车保存、Esc 取消（全程键盘可完成）</summary>
     private void InlineInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
