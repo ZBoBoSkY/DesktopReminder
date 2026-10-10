@@ -36,7 +36,7 @@ public sealed class TrayIcon : IDisposable
         showMain.Click += (_, _) => RequestShowMain?.Invoke();
         _menu.Items.Add(new WF.ToolStripSeparator());
 
-        var addTask = _menu.Items.Add("新建任务");
+        var addTask = _menu.Items.Add("新建任务 (Ctrl+Alt+N)");
         addTask.Click += (_, _) => RequestAddTask?.Invoke();
 
         _menu.Items.Add(new WF.ToolStripSeparator());

@@ -29,7 +29,15 @@ public partial class App : Application
     private const string MutexName = "DesktopReminder_SingleInstance_9f2c";
     private const string AutoStartValueName = "DesktopReminder";
 
+    // 全局快捷键 Ctrl+Alt+N（快速新建任务）：MOD_ALT|MOD_CONTROL + VK_N
+    private const int HotkeyId = 0xD001;
+    private const uint ModControlAlt = 0x0001 | 0x0002;
+    private const uint VkN = 0x4E;
+    private const int WmHotkey = 0x0312;
+
     private Mutex? _mutex;
+    private HwndSource? _hotkeySource;
+    private bool _hotkeyRegistered;
     private FileLogger _logger = null!;
     private AppSettings _settings = null!;
     private JsonSettingsRepository _settingsRepo = null!;
@@ -57,6 +65,12 @@ public partial class App : Application
 
     [DllImport("user32.dll")]
     private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect lpRect);
+
+    [DllImport("user32.dll")]
+    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [DllImport("user32.dll")]
+    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
     /// <summary>鼠标物理坐标是否落在窗口矩形内（半透明状态恢复清晰的系统级兜底）</summary>
     private static bool IsPointerInside(Window window)
@@ -163,6 +177,7 @@ public partial class App : Application
         // 主窗口
         _mainWindow.InteractionOccurred += () => _stateMachine.RegisterInteraction(DateTime.Now);
         _mainWindow.RequestHideToTray += () => _stateMachine.CollapseToIcon(DateTime.Now);
+        _mainWindow.SourceInitialized += (_, _) => RegisterGlobalHotkey();
         _mainViewModel.RequestAddTask += OpenAddTaskDialog;
         _mainViewModel.RequestMinimizeToIcon += () => _stateMachine.CollapseToIcon(DateTime.Now);
         _mainViewModel.RequestOpenSettings += OpenSettingsDialog;
@@ -318,6 +333,49 @@ public partial class App : Application
 
     // ---------- 动作 ----------
 
+    /// <summary>全局快捷键 Ctrl+Alt+N：任何软件里都能一键新建任务（配合"自动捕捉上一个软件"）</summary>
+    private void RegisterGlobalHotkey()
+    {
+        try
+        {
+            var hwnd = new WindowInteropHelper(_mainWindow).Handle;
+            if (hwnd == IntPtr.Zero)
+            {
+                return;
+            }
+
+            _hotkeySource = HwndSource.FromHwnd(hwnd);
+            _hotkeySource?.AddHook(HotkeyWndProc);
+            _hotkeyRegistered = RegisterHotKey(hwnd, HotkeyId, ModControlAlt, VkN);
+            _logger.Info(_hotkeyRegistered
+                ? "全局快捷键 Ctrl+Alt+N 注册成功"
+                : "全局快捷键注册失败（可能已被其他程序占用）");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("注册全局快捷键失败", ex);
+        }
+    }
+
+    private IntPtr HotkeyWndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WmHotkey && wParam.ToInt32() == HotkeyId)
+        {
+            Dispatcher.BeginInvoke(OnGlobalHotkeyPressed);
+            handled = true;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private void OnGlobalHotkeyPressed()
+    {
+        // 快捷键即交互：重置收起计时、显示主界面（含到期直达）、弹出新建任务
+        _stateMachine.RegisterInteraction(DateTime.Now);
+        ShowMainWindow(forceActive: true);
+        OpenAddTaskDialog();
+    }
+
     private void OpenAddTaskDialog()
     {
         var vm = new AddTaskViewModel(_mainViewModel.GetPreviousAppName());
@@ -461,6 +519,12 @@ public partial class App : Application
         }
 
         _timer.Stop();
+        if (_hotkeyRegistered)
+        {
+            UnregisterHotKey(new WindowInteropHelper(_mainWindow).Handle, HotkeyId);
+            _hotkeySource?.RemoveHook(HotkeyWndProc);
+            _hotkeyRegistered = false;
+        }
         _mainWindow.AllowClose = true;
         _mainWindow.Close();
         _iconWindow.Close();

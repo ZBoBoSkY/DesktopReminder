@@ -3,6 +3,12 @@
 本文件记录每个版本的变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)（主版本.次版本.修订号）。
 
+## [Unreleased]
+
+### 新增
+- **全局快捷键 Ctrl+Alt+N**：任何软件里按一下即弹出新建任务对话框（自动捕捉上一个操作的软件），
+  空状态提示与托盘菜单同步标注快捷键
+
 ## [v0.6.0] - 2026-09-20
 
 ### 新增
