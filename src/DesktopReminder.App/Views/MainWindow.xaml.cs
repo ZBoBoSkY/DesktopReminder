@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -14,6 +15,9 @@ public partial class MainWindow : ThemeWindow
     public const double TitleBarHeight = 36;   // DIP
     public const double ResizeGripSize = 22;   // DIP
     private const double ButtonZoneWidth = 150; // 标题栏右侧四个按钮 + 边距（DIP）
+
+    /// <summary>内联新建的时长胶囊列表（XAML x:Static 引用）</summary>
+    public static IReadOnlyList<int> InlineMinutesSource => MainViewModel.InlinePresetMinutes;
 
     /// <summary>用户与窗口交互（悬停/激活）→ App 注册到状态机</summary>
     public event Action? InteractionOccurred;
@@ -36,6 +40,9 @@ public partial class MainWindow : ThemeWindow
         {
             SizeToContent = SizeToContent.Height;
         };
+
+        // 内联新建行展开后：光标停在备注输入框（软件名已自动填好）
+        viewModel.InlineAddStarted += () => InlineNoteBox.Focus();
     }
 
     /// <summary>出现动画（WPF Window 禁止设置 RenderTransform，用淡入实现柔和的材质到达感；统一 spring 手感）</summary>
@@ -121,6 +128,22 @@ public partial class MainWindow : ThemeWindow
     private void Window_MouseEnter(object sender, MouseEventArgs e) => InteractionOccurred?.Invoke();
 
     private void Window_Activated(object sender, EventArgs e) => InteractionOccurred?.Invoke();
+
+    /// <summary>内联新建输入框键盘：回车保存、Esc 取消（全程键盘可完成）</summary>
+    private void InlineInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        var vm = (MainViewModel)DataContext;
+        if (e.Key == Key.Enter && vm.SaveInlineCommand.CanExecute(null))
+        {
+            vm.SaveInlineCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            vm.CancelInlineCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
 
     /// <summary>点击到期提示条 → 收起历史面板、滚动到第一个到期任务（任务已按到期升序，即列表顶部）</summary>
     private void DueBanner_Click(object sender, MouseButtonEventArgs e) => FocusFirstDueTask();

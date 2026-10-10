@@ -376,17 +376,11 @@ public partial class App : Application
         OpenAddTaskDialog();
     }
 
+    /// <summary>新建任务统一入口（第 3 步起改为内联）：显示主界面并展开列表顶部的内联新建行</summary>
     private void OpenAddTaskDialog()
     {
-        var vm = new AddTaskViewModel(_mainViewModel.GetPreviousAppName(), _appNameProvider.GetPreviousProcessName());
-        var dialog = new AddTaskDialog(vm, (name, note, duration, processName) =>
-        {
-            _coordinator.AddTask(name, note, duration, processName: processName);
-            _mainViewModel.RefreshFromCoordinator();
-            _stateMachine.RegisterInteraction(DateTime.Now);
-        })
-        { Owner = _mainWindow };
-        dialog.ShowDialog();
+        _stateMachine.RegisterInteraction(DateTime.Now);
+        _mainViewModel.BeginInlineAdd(_mainViewModel.GetPreviousAppName(), _appNameProvider.GetPreviousProcessName());
     }
 
     private void ShowSnoozeOptions(ReminderTask task)

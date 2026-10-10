@@ -18,6 +18,11 @@ public sealed class MainViewModel : ObservableObject
     private bool _deletedPanelVisible;
     private bool _hasCompleted;
     private bool _hasDeleted;
+    private bool _inlineAddVisible;
+    private string _inlineAppName = "";
+    private string _inlineNote = "";
+    private int _inlineMinutes = 5;
+    private string? _inlineProcessName;
 
     public MainViewModel(ReminderCoordinator coordinator, IAppNameProvider appNameProvider)
     {
@@ -34,6 +39,17 @@ public sealed class MainViewModel : ObservableObject
 
         // 双击空列表/第一列 → 新建任务（冻结需求：空状态提示「双击新建任务」）
         DoubleClickAddCommand = new RelayCommand(_ => RequestAddTask?.Invoke());
+
+        // 内联新建（第 3 步）：列表顶部展开一行，回车保存、Esc 取消
+        SaveInlineCommand = new RelayCommand(_ => SaveInline(), _ => CanSaveInline());
+        CancelInlineCommand = new RelayCommand(_ => InlineAddVisible = false);
+        SelectMinuteCommand = new RelayCommand(p =>
+        {
+            if (p is string s && int.TryParse(s, out var m) && m > 0)
+            {
+                InlineMinutes = m;
+            }
+        });
     }
 
     // ---- UI 事件出口（由窗口绑定） ----
@@ -93,6 +109,71 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand OpenAboutCommand { get; }
     public RelayCommand ExitCommand { get; }
     public RelayCommand DoubleClickAddCommand { get; }
+    public RelayCommand SaveInlineCommand { get; }
+    public RelayCommand CancelInlineCommand { get; }
+    public RelayCommand SelectMinuteCommand { get; }
+
+    /// <summary>内联新建的固定时长胶囊（分钟）</summary>
+    public static IReadOnlyList<int> InlinePresetMinutes { get; } = new[] { 5, 10, 15, 30, 60 };
+
+    public bool InlineAddVisible
+    {
+        get => _inlineAddVisible;
+        private set => SetProperty(ref _inlineAddVisible, value);
+    }
+
+    public string InlineAppName
+    {
+        get => _inlineAppName;
+        set
+        {
+            if (SetProperty(ref _inlineAppName, value))
+            {
+                ((RelayCommand)SaveInlineCommand).RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public string InlineNote
+    {
+        get => _inlineNote;
+        set => SetProperty(ref _inlineNote, value);
+    }
+
+    public int InlineMinutes
+    {
+        get => _inlineMinutes;
+        private set => SetProperty(ref _inlineMinutes, value);
+    }
+
+    /// <summary>显示内联新建行：软件名自动填好、时长复位 5 分钟，光标由窗口层移到备注框</summary>
+    public void BeginInlineAdd(string appName, string? processName)
+    {
+        _inlineProcessName = processName;
+        InlineAppName = appName;
+        InlineNote = "";
+        InlineMinutes = 5;
+        InlineAddVisible = true;
+        InlineAddStarted?.Invoke();
+    }
+
+    /// <summary>内联行显示后触发（窗口层把焦点放到备注输入框）</summary>
+    public event Action? InlineAddStarted;
+
+    private void SaveInline()
+    {
+        var name = InlineAppName.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            return;
+        }
+
+        _coordinator.AddTask(name, InlineNote.Trim(), TimeSpan.FromMinutes(InlineMinutes), processName: _inlineProcessName);
+        RefreshFromCoordinator();
+        InlineAddVisible = false;
+    }
+
+    private bool CanSaveInline() => !string.IsNullOrWhiteSpace(InlineAppName);
 
     /// <summary>当前上一个操作的软件名称（新建对话框自动填充用）</summary>
     public string GetPreviousAppName() => _appNameProvider.GetPreviousAppName();

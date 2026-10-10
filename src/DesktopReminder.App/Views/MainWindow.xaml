@@ -78,6 +78,60 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!-- 内联新建输入框（圆角 8，聚焦时描边变强调色） -->
+        <Style x:Key="InlineTextBox" TargetType="TextBox">
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Background" Value="{DynamicResource ThemeSurface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 时长胶囊（RadioButton 自管理互斥选中态；选中 = 强调色底白字） -->
+        <Style x:Key="MinuteCapsule" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="bd" CornerRadius="14" Padding="14,5"
+                                Background="{DynamicResource ThemeHover}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ThemeBorder}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </views:ThemeWindow.Resources>
 
     <!-- 外层大圆角卡片 + 阴影（FlClash：大圆角 20，无描边靠深浅分层） -->
@@ -260,8 +314,58 @@
                 </DockPanel>
             </Border>
 
-            <!-- ============ 任务列表（进行中，优先级最高：至少占一行高度） ============ -->
-            <ScrollViewer Grid.Row="2" x:Name="TaskScroll" VerticalScrollBarVisibility="Auto" MaxHeight="430" MinHeight="64">
+            <!-- ============ 任务区（内联新建置顶，列表跟随；进行中任务优先级最高） ============ -->
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 内联新建行（第 3 步）：软件名自动填好 → 光标停备注 → 回车保存 Esc 取消 -->
+                <Border Grid.Row="0" Margin="8,2,8,6" Padding="10,8" CornerRadius="12"
+                        Background="{DynamicResource ThemeHover}"
+                        Visibility="{Binding InlineAddVisible, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="InlineAppNameBox" Grid.Column="0" Style="{StaticResource InlineTextBox}"
+                                     Text="{Binding InlineAppName, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="InlineInput_KeyDown"/>
+                            <TextBox x:Name="InlineNoteBox" Grid.Column="1" Margin="6,0,0,0"
+                                     Style="{StaticResource InlineTextBox}"
+                                     Text="{Binding InlineNote, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="InlineInput_KeyDown"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="6,0,0,0">
+                                <Button Style="{StaticResource RowButton}" Content="&#xE73E;" Foreground="{DynamicResource ThemeActive}"
+                                        ToolTip="保存任务" Command="{Binding SaveInlineCommand}"/>
+                                <Button Style="{StaticResource RowButton}" Content="&#xE711;" Foreground="{DynamicResource ThemeSecondaryText}"
+                                        ToolTip="取消（Esc）" Command="{Binding CancelInlineCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="时长：" FontSize="12" Foreground="{DynamicResource ThemeSecondaryText}"
+                                       VerticalAlignment="Center"/>
+                            <ItemsControl ItemsSource="{x:Static views:MainWindow.InlineMinutesSource}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton Style="{StaticResource MinuteCapsule}" GroupName="InlineMinute"
+                                                     Content="{Binding}"
+                                                     Command="{Binding DataContext.SelectMinuteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                     CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="回车保存 · Esc 取消" FontSize="11" Foreground="{DynamicResource ThemeSecondaryText}"
+                                       VerticalAlignment="Center" Opacity="0.7"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" x:Name="TaskScroll" VerticalScrollBarVisibility="Auto" MaxHeight="430" MinHeight="64">
                 <Grid>
                     <ItemsControl ItemsSource="{Binding ActiveTasks}">
                         <ItemsControl.ItemTemplate>
@@ -382,6 +486,7 @@
                     </StackPanel>
                 </Grid>
             </ScrollViewer>
+            </Grid>
 
         </Grid>
     </Border>
