@@ -15,12 +15,14 @@ public partial class DueNotifyWindow : ThemeWindow
 {
     private readonly Action<ReminderTask> _onComplete;
     private readonly Action<ReminderTask, int> _onSnooze;
+    private readonly Action<ReminderTask>? _onJumpBack;
 
-    public DueNotifyWindow(Action<ReminderTask> onComplete, Action<ReminderTask, int> onSnooze)
+    public DueNotifyWindow(Action<ReminderTask> onComplete, Action<ReminderTask, int> onSnooze, Action<ReminderTask>? onJumpBack = null)
     {
         InitializeComponent();
         _onComplete = onComplete;
         _onSnooze = onSnooze;
+        _onJumpBack = onJumpBack;
 
         // 主题资源在构造函数里立即注册：Refresh 会在 Show() 之前构建行（FindResource 主题色），
         // 不能等到 Loaded 才注册，否则首次刷新就抛「资源找不到」异常、弹窗永不显示。
@@ -66,7 +68,7 @@ public partial class DueNotifyWindow : ThemeWindow
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        // 左：软件名（加粗）+ 备注（次要色）
+        // 左：软件名（加粗）+ 备注（次要色）；点名字区跳回对应软件窗口
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         var name = new TextBlock
         {
@@ -88,6 +90,14 @@ public partial class DueNotifyWindow : ThemeWindow
                 Foreground = (Brush)FindResource("ThemeSecondaryText"),
                 Margin = new Thickness(0, 2, 0, 0),
             });
+        }
+
+        // 点名字区：跳回该软件窗口（有进程名才可点）
+        if (_onJumpBack is not null && !string.IsNullOrWhiteSpace(task.ProcessName))
+        {
+            text.Cursor = System.Windows.Input.Cursors.Hand;
+            text.ToolTip = $"点此切回「{task.AppName}」";
+            text.MouseLeftButtonUp += (_, _) => _onJumpBack(task);
         }
 
         grid.Children.Add(text);

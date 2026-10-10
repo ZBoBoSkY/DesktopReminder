@@ -382,7 +382,8 @@ public partial class App : Application
                 {
                     _coordinator.SnoozeTask(task.Id, TimeSpan.FromMinutes(minutes));
                     _mainViewModel.RefreshFromCoordinator();
-                });
+                },
+                onJumpBack: JumpBackToWindow);
         }
 
         try
@@ -395,7 +396,7 @@ public partial class App : Application
         }
     }
 
-    /// <summary>点任务行 → 一键跳回该任务对应的软件窗口（进程名匹配，最小化先还原）</summary>
+    /// <summary>点任务行 → 一键跳回该任务对应的软件窗口（EnumWindows 按 PID 找 + AttachThreadInput 绕过前台锁）</summary>
     private void JumpBackToWindow(ReminderTask task)
     {
         if (string.IsNullOrWhiteSpace(task.ProcessName))
@@ -405,29 +406,10 @@ public partial class App : Application
 
         try
         {
-            foreach (var process in Process.GetProcessesByName(task.ProcessName))
+            if (DesktopReminder.App.WindowsApi.WindowSwitcher.SwitchTo(task.ProcessName))
             {
-                try
-                {
-                    var hwnd = process.MainWindowHandle;
-                    if (hwnd == IntPtr.Zero)
-                    {
-                        continue;
-                    }
-
-                    if (IsIconic(hwnd))
-                    {
-                        ShowWindowAsync(hwnd, 9 /* SW_RESTORE */);
-                    }
-
-                    SetForegroundWindow(hwnd);
-                    _stateMachine.RegisterInteraction(DateTime.Now);
-                    return;
-                }
-                finally
-                {
-                    process.Dispose();
-                }
+                _stateMachine.RegisterInteraction(DateTime.Now);
+                return;
             }
 
             _logger.Info($"未找到可跳回的窗口：{task.ProcessName}");
