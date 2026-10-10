@@ -34,10 +34,15 @@ public static class AppIconFactory
         var hasTag = !string.IsNullOrEmpty(countdownText);
         var radius = circleSize / 2;
 
-        // 圆形主体：径向渐变（高光在左上，Apple 风格立体感）
+        // 图标主体固定用 Fluent 蓝 #0078D4 + 白色时钟（深浅主题下对比度都够）；
+        // 角标固定用饱和红/绿 + 白字（深色主题的柔和状态色配白字看不清）
+        var iconAccent = ThemeColors.FluentAccentBase;
+        var glyphColor = Colors.White;
+
+        // 圆形主体：径向渐变（高光在左上，轻微立体感）
         var circleCenter = new Point(radius, canvasHeight / 2);
         var accentBrush = new RadialGradientBrush(
-            Lighten(colors.AccentColor, 0.35), colors.AccentColor);
+            Lighten(iconAccent, 0.25), iconAccent);
         accentBrush.GradientOrigin = new Point(0.32, 0.22);
         accentBrush.RadiusX = 1.0;
         accentBrush.RadiusY = 1.0;
@@ -45,12 +50,12 @@ public static class AppIconFactory
         dc.DrawEllipse(accentBrush, null, circleCenter, radius - 2, radius - 2);
 
         // 圆形中央：时钟符号（圆形描边 + 指针）
-        var stroke = new Pen(new SolidColorBrush(colors.ForegroundColor), 2.5);
+        var stroke = new Pen(new SolidColorBrush(glyphColor), 2.5);
         stroke.Freeze();
         var clockCenter = circleCenter;
         var clockRadius = radius * 0.42;
         dc.DrawEllipse(null, stroke, clockCenter, clockRadius, clockRadius);
-        var handPen = new Pen(new SolidColorBrush(colors.ForegroundColor), 2);
+        var handPen = new Pen(new SolidColorBrush(glyphColor), 2);
         handPen.Freeze();
         dc.DrawLine(handPen, clockCenter, new Point(clockCenter.X, clockCenter.Y - clockRadius * 0.75));
         dc.DrawLine(handPen, clockCenter, new Point(clockCenter.X + clockRadius * 0.6, clockCenter.Y + clockRadius * 0.15));
@@ -58,7 +63,8 @@ public static class AppIconFactory
         // 右侧标签（圆角矩形，显示倒计时）
         if (hasTag && countdownText is not null)
         {
-            var typeface = new Typeface("Microsoft YaHei");
+            var typeface = new Typeface(new System.Windows.Media.FontFamily("Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI"),
+                FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
             var text = new FormattedText(
                 countdownText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                 typeface, circleSize * 0.26, new SolidColorBrush(colors.ForegroundColor), 1.25);
@@ -69,7 +75,7 @@ public static class AppIconFactory
             tagBrush.Freeze();
             var tagPen = new Pen(new SolidColorBrush(colors.BorderColor), 1);
             tagPen.Freeze();
-            dc.DrawRoundedRectangle(tagBrush, tagPen, tagRect, 8, 8);
+            dc.DrawRoundedRectangle(tagBrush, tagPen, tagRect, tagRect.Height / 2, tagRect.Height / 2);
             dc.DrawText(text, new Point(tagLeft + 8, tagTop + 4));
         }
 
@@ -77,7 +83,7 @@ public static class AppIconFactory
         // 位置按画布右上角计算（旧版按 circleSize 推导致中心超出画布顶边，上半圆被裁剪）
         if (badgeCount > 0)
         {
-            var badgeColor = hasOverdue ? colors.DueColor : colors.ActiveColor;
+            var badgeColor = hasOverdue ? ThemeColors.Light.DueColor : ThemeColors.Light.ActiveColor;
             var badgeText = ReminderSchedulerBadgeText(badgeCount);
             var badgeSize = circleSize * 0.42;
             var badgeCenter = new Point(canvasWidth - badgeSize * 0.5 - 1, badgeSize * 0.5 + 1);
@@ -87,7 +93,8 @@ public static class AppIconFactory
 
             var bf = new FormattedText(
                 badgeText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                new Typeface("Microsoft YaHei"), badgeSize * 0.62, new SolidColorBrush(Colors.White), 1.25);
+                new Typeface(new System.Windows.Media.FontFamily("Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI"),
+                    FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal), badgeSize * 0.62, new SolidColorBrush(Colors.White), 1.25);
             dc.DrawText(bf, new Point(badgeCenter.X - bf.Width / 2, badgeCenter.Y - bf.Height / 2));
         }
     }
