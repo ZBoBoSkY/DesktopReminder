@@ -55,6 +55,8 @@
 
 ## 四、快速上手（便携版）
 
+> **运行前提**：本软件依赖 **.NET 8 Desktop Runtime（x64）**。未安装时双击 exe 会提示缺少运行库，请先到微软官网下载安装：<https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0>（在页面中找到「.NET Desktop Runtime 8.0.x」→ Windows x64）。Windows 11 / 10 均需单独安装，装一次即可。
+
 1. 下载 zip 压缩包，解压到任意文件夹（如 `D:\DesktopReminder`）
 2. 双击 `DesktopReminder.exe` 即可使用，无需安装
 3. 数据保存在程序同目录 `data` 文件夹（`tasks.json` / `settings.json` / `app_names.json`），删除整个文件夹即完成卸载
@@ -102,6 +104,7 @@ DesktopReminder_v3/
 ├── 00-需求规格与架构设计.html   # 完整需求文档（66 项冻结需求 + 技术定案 + 软件名映射表）
 ├── README.md                    # 本文件
 ├── CHANGELOG.md                 # 更新日志（每个版本逐条记录）
+├── LICENSE                      # MIT 许可证
 ├── DesktopReminder.sln
 ├── src/                         # 源码（Domain / Core / Infrastructure / App 四层）
 └── tests/                       # 单元测试（57 个）
@@ -109,8 +112,12 @@ DesktopReminder_v3/
 
 ## 九、版本历史
 
-见 [CHANGELOG.md](CHANGELOG.md)。当前稳定版：**v0.4.0**。
+见 [CHANGELOG.md](CHANGELOG.md)。当前稳定版：**v0.5.1**。
 
 ## 十、作者
 
 zbobosky · 曾波的第一个软件（2026）。欢迎提 Issue 反馈问题或想法。
+
+## 许可证
+
+本项目以 [MIT 许可证](LICENSE) 开源。

@@ -3,6 +3,13 @@
 本文件记录每个版本的变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)（主版本.次版本.修订号）。
 
+## [Unreleased]
+
+### 文档
+- README 补充运行前提：需安装 .NET 8 Desktop Runtime（x64）
+- README 当前稳定版更正为 v0.5.1
+- 新增 MIT 许可证（LICENSE）
+
 ## [v0.5.1] - 2026-09-19
 
 ### 修复
