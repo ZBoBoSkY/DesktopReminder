@@ -46,7 +46,33 @@ public static class ThemeManager
     {
         Current = _followSystem ? (IsSystemDark ? ThemeColors.Dark : ThemeColors.Light)
                                 : (_mode == ThemeMode.Dark ? ThemeColors.Dark : ThemeColors.Light);
+        SyncFluentControls(Current);
         ThemeChanged?.Invoke(Current);
+    }
+
+    /// <summary>
+    /// 把当前深/浅主题同步给 WPF-UI 控件库（设置窗口等用到的 Fluent 按钮/输入框/下拉框），
+    /// 强调色固定为 Fluent 蓝，不跟随系统强调色，保证与自绘部分一致。
+    /// </summary>
+    private static void SyncFluentControls(ThemeColors colors)
+    {
+        if (System.Windows.Application.Current is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var theme = colors.IsDark
+                ? Wpf.Ui.Appearance.ApplicationTheme.Dark
+                : Wpf.Ui.Appearance.ApplicationTheme.Light;
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme, Wpf.Ui.Controls.WindowBackdropType.None, false);
+            Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(ThemeColors.FluentAccentBase, theme, false, false);
+        }
+        catch
+        {
+            // 控件库主题同步失败不影响自绘界面（自绘部分只读 ThemeColors）
+        }
     }
 
     /// <summary>Windows 是否处于深色应用主题（注册表 AppsUseLightTheme=0）</summary>
