@@ -39,7 +39,7 @@ public sealed class ThemeColors
     public static ThemeColors Light { get; } = new()
     {
         BackgroundColor = Color.FromRgb(0xF4, 0xEF, 0xEF), // 奶油暖白
-        SurfaceColor = Color.FromArgb(0xF6, 0xFF, 0xFF, 0xFF), // 96% 白卡片
+        SurfaceColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // 纯白卡片（不透明：AllowsTransparency 窗口半透明卡片会与桌面 alpha 合成出异常纹理）
         ForegroundColor = Color.FromRgb(0x1B, 0x1B, 0x1B), // 近黑主文本
         SecondaryTextColor = Color.FromRgb(0x8E, 0x8E, 0x93), // 次要文本
         BorderColor = Color.FromArgb(0x18, 0x00, 0x00, 0x00), // 极淡描边
@@ -53,7 +53,7 @@ public sealed class ThemeColors
     public static ThemeColors Dark { get; } = new()
     {
         BackgroundColor = Color.FromRgb(0x1B, 0x1B, 0x1B), // 近黑深灰
-        SurfaceColor = Color.FromArgb(0xF6, 0x2A, 0x2A, 0x2A), // 深灰卡片表面
+        SurfaceColor = Color.FromRgb(0x2A, 0x2A, 0x2A), // 深灰卡片表面（不透明）
         ForegroundColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // 白主文本
         SecondaryTextColor = Color.FromRgb(0x9E, 0x9E, 0x9E), // 次要文本
         BorderColor = Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF), // 极淡描边
