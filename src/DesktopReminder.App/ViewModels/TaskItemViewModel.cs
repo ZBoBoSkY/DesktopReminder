@@ -1,3 +1,5 @@
+using System.Windows.Media;
+using DesktopReminder.App.Views;
 using DesktopReminder.Domain.Models;
 using DesktopReminder.Domain.Services;
 
@@ -40,6 +42,13 @@ public sealed class TaskItemViewModel : ObservableObject
     public bool HasNote => !string.IsNullOrEmpty(Task.Note);
     public bool IsCompleted => Task.Status == ReminderTaskStatus.Completed;
     public string CompletedAtText => Task.CompletedAt?.ToString("HH:mm") ?? "";
+
+    /// <summary>真实软件图标（按进程名取 exe 图标；取不到为 null，UI 回退首字母块）</summary>
+    public ImageSource? AppIcon => AppIconCache.GetIcon(Task.ProcessName);
+    public bool HasIcon => AppIcon != null;
+
+    /// <summary>图标回退：软件名首字符（无真实图标时显示的圆角字母块）</summary>
+    public string InitialLetter => string.IsNullOrEmpty(AppName) ? "?" : AppName[..1].ToUpperInvariant();
 
     public string CountdownText
     {

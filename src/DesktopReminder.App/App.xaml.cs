@@ -378,10 +378,10 @@ public partial class App : Application
 
     private void OpenAddTaskDialog()
     {
-        var vm = new AddTaskViewModel(_mainViewModel.GetPreviousAppName());
-        var dialog = new AddTaskDialog(vm, (name, note, duration) =>
+        var vm = new AddTaskViewModel(_mainViewModel.GetPreviousAppName(), _appNameProvider.GetPreviousProcessName());
+        var dialog = new AddTaskDialog(vm, (name, note, duration, processName) =>
         {
-            _coordinator.AddTask(name, note, duration);
+            _coordinator.AddTask(name, note, duration, processName: processName);
             _mainViewModel.RefreshFromCoordinator();
             _stateMachine.RegisterInteraction(DateTime.Now);
         })

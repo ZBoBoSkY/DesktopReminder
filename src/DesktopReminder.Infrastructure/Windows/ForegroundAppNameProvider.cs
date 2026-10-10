@@ -20,6 +20,7 @@ public sealed class ForegroundAppNameProvider : IAppNameProvider
     private readonly IReadOnlyDictionary<string, string> _map;
     private IntPtr _lastForeignWindow;
     private string _lastName = "未知";
+    private string? _lastProcessName;
 
     public ForegroundAppNameProvider(string? mappingFilePath = null)
     {
@@ -50,6 +51,7 @@ public sealed class ForegroundAppNameProvider : IAppNameProvider
         {
             using var process = System.Diagnostics.Process.GetProcessById((int)processId);
             var processName = process.ProcessName; // 不含 .exe
+            _lastProcessName = processName;
             _lastName = _map.TryGetValue(processName.ToLowerInvariant(), out var friendlyName)
                 ? friendlyName
                 : processName;
@@ -62,6 +64,9 @@ public sealed class ForegroundAppNameProvider : IAppNameProvider
 
     /// <summary>返回最近记录的上一个操作的软件名称</summary>
     public string GetPreviousAppName() => _lastName;
+
+    /// <summary>返回最近记录的上一个操作的软件进程名（不含 .exe）</summary>
+    public string? GetPreviousProcessName() => _lastProcessName;
 
     private static IReadOnlyDictionary<string, string> LoadMapping(string? filePath)
     {

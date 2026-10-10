@@ -12,6 +12,9 @@ public sealed class ReminderTask
     /// <summary>软件名称（用户友好名，如「飞书」「文件管理器」）</summary>
     public string AppName { get; set; } = string.Empty;
 
+    /// <summary>进程名（不含 .exe，用于取真实软件图标；旧任务为空则显示首字母块）</summary>
+    public string? ProcessName { get; set; }
+
     /// <summary>备注（说明这个软件具体在做什么事，可为空）</summary>
     public string Note { get; set; } = string.Empty;
 

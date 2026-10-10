@@ -16,4 +16,7 @@ public interface IAppNameProvider
 
     /// <summary>返回上一个前台软件的用户友好名称；无法识别时返回「未知」</summary>
     string GetPreviousAppName();
+
+    /// <summary>返回上一个前台软件的进程名（不含 .exe，用于取真实图标）；无可用时返回 null</summary>
+    string? GetPreviousProcessName();
 }

@@ -12,12 +12,14 @@ public sealed class AddTaskViewModel : ObservableObject
     private string _note = "";
     private int _selectedOptionIndex;
     private string _customMinutes = "";
+    private readonly string? _processName;
 
-    public AddTaskViewModel(string detectedAppName)
+    public AddTaskViewModel(string detectedAppName, string? processName = null)
     {
         _appName = detectedAppName;
+        _processName = processName;
         OkCommand = new RelayCommand(
-            _ => Confirm?.Invoke(AppName.Trim(), Note.Trim(), GetDuration()),
+            _ => Confirm?.Invoke(AppName.Trim(), Note.Trim(), GetDuration(), _processName),
             _ => CanConfirm());
         CancelCommand = new RelayCommand(_ => Cancel?.Invoke());
     }
@@ -65,8 +67,8 @@ public sealed class AddTaskViewModel : ObservableObject
     public RelayCommand OkCommand { get; }
     public RelayCommand CancelCommand { get; }
 
-    /// <summary>确认事件：携带 (名称, 备注, 时长)</summary>
-    public event Action<string, string, TimeSpan>? Confirm;
+    /// <summary>确认事件：携带 (名称, 备注, 时长, 进程名)</summary>
+    public event Action<string, string, TimeSpan, string?>? Confirm;
     public event Action? Cancel;
 
     /// <summary>解析最终时长：固定选项选中取固定值，自定义取输入分钟数</summary>

@@ -41,13 +41,14 @@ public sealed class ReminderCoordinator
     public int CountDue(DateTime now) => ReminderScheduler.CountDueOrOverdue(_tasks, now);
 
     /// <summary>新增任务：默认时长取配置，可覆盖；立即持久化</summary>
-    public ReminderTask AddTask(string appName, string note, TimeSpan? duration = null, DateTime? now = null)
+    public ReminderTask AddTask(string appName, string note, TimeSpan? duration = null, DateTime? now = null, string? processName = null)
     {
         var current = now ?? DateTime.Now;
         var task = new ReminderTask
         {
             AppName = appName,
             Note = note,
+            ProcessName = processName,
             Duration = duration ?? TimeSpan.FromMinutes(_settings.DefaultTaskMinutes),
             CreatedAt = current,
             DueAt = current + (duration ?? TimeSpan.FromMinutes(_settings.DefaultTaskMinutes)),
