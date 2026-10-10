@@ -135,13 +135,10 @@
         </Style>
     </views:ThemeWindow.Resources>
 
-    <!-- 外层大圆角卡片 + 阴影（FlClash：大圆角 20，无描边靠深浅分层） -->
+    <!-- 外层大圆角卡片：无阴影晕，靠 1px 极淡描边界定边界（浅色下不脏） -->
     <Border CornerRadius="20" Margin="0"
             Background="{DynamicResource ThemeSurface}"
-            BorderThickness="0">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Direction="270" Opacity="0.15" Color="#000000"/>
-        </Border.Effect>
+            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
         <!-- Grid 布局：进行中任务用 * 高度永远优先占空间，面板放下面，窗口再矮也先保进行中任务可见 -->
         <Grid>
             <Grid.RowDefinitions>

@@ -68,21 +68,19 @@ public static class AppIconFactory
         dc.DrawLine(handPen, clockCenter, new Point(clockCenter.X, clockCenter.Y - clockRadius * 0.75));
         dc.DrawLine(handPen, clockCenter, new Point(clockCenter.X + clockRadius * 0.6, clockCenter.Y + clockRadius * 0.15));
 
-        // 一体式倒计时标签：圆角矩形左缘与圆形右缘重叠（无缝隙，视觉连成一体）
+        // 倒计时标签：白底圆角矩形，与圆形之间留小缝（不压圆，接缝清爽）
         if (hasTag && countdownText is not null)
         {
             var typeface = new Typeface("Microsoft YaHei");
             var text = new FormattedText(
                 countdownText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                 typeface, circleSize * 0.26, new SolidColorBrush(colors.ForegroundColor), 1.25);
-            var tagLeft = circleSize - 4; // 与圆形重叠，连体
+            var tagLeft = circleSize + 6; // 圆右缘外留 6px 缝，不重叠
             var tagTop = circleCenter.Y - text.Height / 2;
             var tagRect = new Rect(tagLeft, tagTop, text.Width + 16, text.Height + 8);
             var tagBrush = new SolidColorBrush(colors.SurfaceColor);
             tagBrush.Freeze();
-            var tagPen = new Pen(new SolidColorBrush(colors.BorderColor), 1);
-            tagPen.Freeze();
-            dc.DrawRoundedRectangle(tagBrush, tagPen, tagRect, 8, 8);
+            dc.DrawRoundedRectangle(tagBrush, null, tagRect, 8, 8);
             dc.DrawText(text, new Point(tagLeft + 8, tagTop + 4));
         }
 

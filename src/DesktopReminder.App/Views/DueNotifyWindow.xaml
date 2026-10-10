@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:DesktopReminder.App.Views"
         Title="任务到期" Width="320" SizeToContent="Height" ResizeMode="NoResize"
-        WindowStyle="None" Topmost="True" ShowInTaskbar="False"
-        Background="{DynamicResource ThemeBackground}"
+        WindowStyle="None" AllowsTransparency="True" Topmost="True" ShowInTaskbar="False"
+        Background="Transparent"
         Foreground="{DynamicResource ThemeForeground}">
 
-    <Border Margin="10" CornerRadius="14" Background="{DynamicResource ThemeSurface}"
+    <Border Margin="0" CornerRadius="14" Background="{DynamicResource ThemeSurface}"
             BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
             Padding="14,12">
         <StackPanel>
