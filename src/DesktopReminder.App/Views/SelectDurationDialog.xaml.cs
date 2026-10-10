@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls.Primitives;
-using DesktopReminder.App.Themes;
 
 namespace DesktopReminder.App.Views;
 
@@ -17,12 +16,9 @@ public partial class SelectDurationDialog : ThemeWindow
             var button = new Button
             {
                 Content = $"{minutes} 分钟",
-                Height = 34,
+                Height = 36,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
                 Margin = new Thickness(4),
-                Background = ThemeManager.Current.Surface,
-                Foreground = ThemeManager.Current.Foreground,
-                BorderBrush = ThemeManager.Current.Border,
-                BorderThickness = new Thickness(1),
                 Cursor = System.Windows.Input.Cursors.Hand,
             };
             button.Click += (_, _) =>
