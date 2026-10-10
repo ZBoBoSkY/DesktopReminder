@@ -113,7 +113,7 @@ public sealed class TrayIcon : IDisposable
             using (var g = System.Drawing.Graphics.FromImage(bmp))
             {
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                var accent = System.Drawing.Color.FromArgb(c.AccentColor.R, c.AccentColor.G, c.AccentColor.B);
+                var accent = System.Drawing.Color.FromArgb(ThemeColors.FluentAccentBase.R, ThemeColors.FluentAccentBase.G, ThemeColors.FluentAccentBase.B);
                 using var circleBrush = new System.Drawing.SolidBrush(accent);
                 g.FillEllipse(circleBrush, 0, 0, s - 1, s - 1); // 圆占满
 
@@ -127,8 +127,8 @@ public sealed class TrayIcon : IDisposable
                 if (badgeCount > 0)
                 {
                     var badgeColor = hasOverdue
-                        ? System.Drawing.Color.FromArgb(c.DueColor.R, c.DueColor.G, c.DueColor.B)
-                        : System.Drawing.Color.FromArgb(c.ActiveColor.R, c.ActiveColor.G, c.ActiveColor.B);
+                        ? System.Drawing.Color.FromArgb(ThemeColors.Light.DueColor.R, ThemeColors.Light.DueColor.G, ThemeColors.Light.DueColor.B)
+                        : System.Drawing.Color.FromArgb(ThemeColors.Light.ActiveColor.R, ThemeColors.Light.ActiveColor.G, ThemeColors.Light.ActiveColor.B);
                     int b = (int)(s * 0.46);
                     using var bb = new System.Drawing.SolidBrush(badgeColor);
                     g.FillEllipse(bb, s - b, 0, b, b);
