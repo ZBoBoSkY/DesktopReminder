@@ -31,10 +31,10 @@ public sealed class ThemeColors
     public Brush DueSoft => new SolidColorBrush(DueSoftColor);
 
     /// <summary>
-    /// FlClash 风格配色（Material 3 + 灰玫瑰粉强调）：
+    /// 深靛蓝主题配色（用户选定蓝色系）：
     /// - 深色：近黑深灰背景 + 稍浅的卡片表面，纯靠深浅分层，无明显描边
     /// - 浅色：奶油暖白背景 + 纯白卡片
-    /// - 强调色为豆沙玫瑰粉（灰粉），完成用柔和绿，到期用柔和红
+    /// - 强调色为深靛蓝，完成用柔和绿，到期用柔和红
     /// </summary>
     public static ThemeColors Light { get; } = new()
     {
@@ -43,7 +43,7 @@ public sealed class ThemeColors
         ForegroundColor = Color.FromRgb(0x1B, 0x1B, 0x1B), // 近黑主文本
         SecondaryTextColor = Color.FromRgb(0x8E, 0x8E, 0x93), // 次要文本
         BorderColor = Color.FromArgb(0x18, 0x00, 0x00, 0x00), // 极淡描边
-        AccentColor = Color.FromRgb(0x58, 0x56, 0xD6), // 深靛蓝（用户选定蓝色系）
+        AccentColor = Color.FromRgb(0x58, 0x56, 0xD6), // 深靛蓝（浅色版）
         DueColor = Color.FromRgb(0xE5, 0x55, 0x6B), // 柔和红
         ActiveColor = Color.FromRgb(0x66, 0xBB, 0x6A), // 柔和绿
         HoverColor = Color.FromArgb(0x12, 0x00, 0x00, 0x00),

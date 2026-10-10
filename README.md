@@ -3,6 +3,8 @@
 > 一个安静地浮在桌面上、自动收起、自动记住你正在做什么并到点提醒你的**多线程工作小助手**。
 > 原则：**平时不打扰，需要时就在眼前。**
 
+[⬇️ 下载最新版（v0.6.0 便携包）](https://github.com/ZBoBoSkY/DesktopReminder/releases/latest)
+
 ---
 
 ## 一、这个软件是干什么的？
@@ -23,7 +25,7 @@
 | **两层到点提醒** | 图标角标显示到期任务数（绿=倒计时中 / 红=已过期）→ 鼠标移上去自动展开看到详情；过期后每 5 分钟重复提醒 |
 | **三态任务库** | 进行中 / 已完成 / 已删除三部分：误点完成可恢复、误删可在"已删除"找回、完成的任务还能重新激活，不用重复新建 |
 | **深/浅色主题跟随系统** | 全套配色（背景/文字/边框/强调色）联动 Windows 深色/浅色主题，不存在"只变背景、文字看不清"的问题 |
-| **便携免安装** | 单个文件夹解压即用：无安装、无注册表污染、不常驻开机（可设置）；数据存在本机，不联网 |
+| **便携免安装** | 单个文件夹解压即用：无安装、无注册表污染、数据存在本机，不联网 |
 | **安全可靠** | 删除有确认框，误操作可恢复；数据文件损坏自动容错；单实例运行不打架 |
 
 ## 三、能实现什么功能
@@ -56,10 +58,38 @@
 ## 四、快速上手（便携版）
 
 1. 下载 zip 压缩包，解压到任意文件夹（如 `D:\DesktopReminder`）
-2. 双击 `DesktopReminder.exe` 即可使用，无需安装
-3. 数据保存在程序同目录 `data` 文件夹（`tasks.json` / `settings.json` / `app_names.json`），删除整个文件夹即完成卸载
+2. **安装 .NET 8 桌面运行时**（见下方"系统要求"；只装一次，所有版本通用）
+3. 双击 `DesktopReminder.exe` 即可使用，无需安装
+4. 数据保存在程序同目录 `data` 文件夹（`tasks.json` / `settings.json` / `app_names.json`），删除整个文件夹即完成卸载
 
-## 五、技术架构
+> ⚠️ 如果双击后没有任何反应，**99% 是没装 .NET 运行时**，先按下方链接安装，再启动。
+
+## 五、系统要求
+
+| 项目 | 要求 |
+| --- | --- |
+| 操作系统 | Windows 10 / 11（x64） |
+| 运行时 | **.NET 8 桌面运行时（Desktop Runtime）**，微软官方下载：<br/>https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0 （选"Desktop Runtime"x64 版本） |
+| 体积 | 便携包约 500KB，运行时只装一次 |
+
+## 六、常见问题
+
+**Q：双击 exe 没反应？**
+A：几乎都是缺 .NET 8 桌面运行时。按"系统要求"里的链接安装后重试。如果装了仍不行，看程序目录 `data/logs/` 下的日志。
+
+**Q：Windows SmartScreen 弹"未知发布者"？**
+A：软件没有代码签名证书，属正常提示。点"更多信息 → 仍要运行"即可。这是个人免费软件的常态，不影响使用。
+
+**Q：数据存在哪？怎么备份？**
+A：程序同目录 `data/` 文件夹，把整个文件夹复制走就是备份。卸载 = 删除整个程序文件夹。
+
+**Q：识别出来的软件名不对？**
+A：内置了 37 条中英文映射（explorer→文件管理器、feishu→飞书等）。你可以编辑 `data/app_names.json` 自己加映射，格式：`"进程名": "显示名"`。
+
+**Q：如何开机自启？**
+A：托盘右键 → 设置 → 勾选"开机自启"。
+
+## 七、技术架构
 
 四层单向依赖（改一处不影响其他层）：
 
@@ -68,49 +98,54 @@
     ↓
 应用层 Core             窗口三态状态机、任务调度、提醒
     ↓
-领域层 Domain           任务模型、到期/排序/倒计时计算（纯逻辑，57 个单元测试覆盖）
+领域层 Domain           任务模型、到期/排序/倒计时计算（纯逻辑，单元测试覆盖）
     ↓
 基础设施 Infrastructure Windows 前台窗口识别、持久化、日志
 ```
 
 - 领域层是**纯静态函数**，不依赖界面与存储，可独立单测——这是"改一处不冒出新 bug"的根基
 - 主题通过 DynamicResource 全树刷新，深/浅色切换一次到位
+- 当前 57 个单元测试全部通过，构建 0 警告 0 错误
 
-## 六、开发环境
+## 八、开发环境与构建
 
-- .NET SDK 8.0（长期支持版）
-- C# / WPF / MVVM / xUnit
-- 支持系统：Windows 10 / 11（Windows 7 尽力兼容）
-
-## 七、构建与测试
+- .NET SDK 8.0（长期支持版）、C# / WPF / MVVM / xUnit
+- 支持系统：Windows 10 / 11
 
 ```bash
 # 构建
 dotnet build DesktopReminder.sln
 
-# 测试（当前 57 个全部通过）
+# 测试
 dotnet test tests/DesktopReminder.Tests/DesktopReminder.Tests.csproj
 
-# 发布便携版（Release）
+# 发布便携版（Release，依赖系统 .NET 8 运行时）
 dotnet publish src/DesktopReminder.App -c Release -r win-x64 --self-contained false -o publish
 ```
 
-## 八、目录结构
+## 九、目录结构
 
 ```
-DesktopReminder_v3/
-├── 00-需求规格与架构设计.html   # 完整需求文档（66 项冻结需求 + 技术定案 + 软件名映射表）
+DesktopReminder/
 ├── README.md                    # 本文件
 ├── CHANGELOG.md                 # 更新日志（每个版本逐条记录）
-├── DesktopReminder.sln
+├── LICENSE                      # MIT 开源协议
+├── PITFALLS.md                  # 开发踩坑记录
+├── 00-需求规格与架构设计.html   # 完整需求文档（66 项冻结需求 + 技术定案）
+├── docs/reference/              # 参考素材（如 FlClash 风格预览图）
+├── tools/                       # 辅助脚本（Git 提交、图标生成等）
 ├── src/                         # 源码（Domain / Core / Infrastructure / App 四层）
 └── tests/                       # 单元测试（57 个）
 ```
 
-## 九、版本历史
+## 十、版本历史
 
-见 [CHANGELOG.md](CHANGELOG.md)。当前稳定版：**v0.4.0**。
+见 [CHANGELOG.md](CHANGELOG.md)。当前稳定版：**v0.6.0**。
 
-## 十、作者
+## 十一、开源协议
+
+[MIT License](LICENSE) — 可以自由使用、修改、分发。
+
+## 十二、作者
 
 zbobosky · 曾波的第一个软件（2026）。欢迎提 Issue 反馈问题或想法。
