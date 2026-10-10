@@ -15,6 +15,11 @@ public abstract class ThemeWindow : Window
         ThemeManager.ThemeChanged += OnThemeChanged;
         Unloaded += (_, _) => ThemeManager.ThemeChanged -= OnThemeChanged;
         Loaded += (_, _) => ApplyTheme();
+        // 全窗口默认字体：Segoe UI Variable + 微软雅黑 UI（Fluent 字体层级，见 App.xaml）
+        if (Application.Current?.TryFindResource("UIFont") is System.Windows.Media.FontFamily uiFont)
+        {
+            FontFamily = uiFont;
+        }
         // 窗口图标由 csproj <ApplicationIcon>app.ico</ApplicationIcon> 统一提供（任务栏/Alt+Tab/标题栏）
     }
 
