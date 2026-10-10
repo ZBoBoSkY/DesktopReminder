@@ -31,36 +31,43 @@ public sealed class ThemeColors
     public Brush DueSoft => new SolidColorBrush(DueSoftColor);
 
     /// <summary>
-    /// FlClash 风格配色（Material 3 + 灰玫瑰粉强调）：
-    /// - 深色：近黑深灰背景 + 稍浅的卡片表面，纯靠深浅分层，无明显描边
-    /// - 浅色：奶油暖白背景 + 纯白卡片
-    /// - 强调色为豆沙玫瑰粉（灰粉），完成用柔和绿，到期用柔和红
+    /// Windows 11 Fluent 2 配色（取自 WinUI 3 默认主题资源）：
+    /// - 浅色：Mica 浅灰底 #F3F3F3 + 近白卡片，描边 6% 黑
+    /// - 深色：#202020 底 + #2C2C2C 卡片，描边 8% 白
+    /// - 强调色为 Windows 默认蓝（浅色 AccentDark1 #005FB8 / 深色 AccentLight2 #60CDFF）
+    /// - 状态色：成功绿 / 危险红沿用系统 Success / Critical 色
     /// </summary>
     public static ThemeColors Light { get; } = new()
     {
-        BackgroundColor = Color.FromRgb(0xF4, 0xEF, 0xEF), // 奶油暖白
-        SurfaceColor = Color.FromArgb(0xF6, 0xFF, 0xFF, 0xFF), // 96% 白卡片
-        ForegroundColor = Color.FromRgb(0x1B, 0x1B, 0x1B), // 近黑主文本
-        SecondaryTextColor = Color.FromRgb(0x8E, 0x8E, 0x93), // 次要文本
-        BorderColor = Color.FromArgb(0x18, 0x00, 0x00, 0x00), // 极淡描边
-        AccentColor = Color.FromRgb(0x58, 0x56, 0xD6), // 深靛蓝（用户选定蓝色系）
-        DueColor = Color.FromRgb(0xE5, 0x55, 0x6B), // 柔和红
-        ActiveColor = Color.FromRgb(0x66, 0xBB, 0x6A), // 柔和绿
-        HoverColor = Color.FromArgb(0x12, 0x00, 0x00, 0x00),
-        DueSoftColor = Color.FromArgb(0x14, 0xE5, 0x55, 0x6B), // 红色 8% 底
+        BackgroundColor = Color.FromRgb(0xF3, 0xF3, 0xF3), // Mica 浅灰底
+        SurfaceColor = Color.FromArgb(0xF7, 0xFB, 0xFB, 0xFB), // 卡片（97% 近白）
+        ForegroundColor = Color.FromArgb(0xE4, 0x00, 0x00, 0x00), // TextFillColorPrimary
+        SecondaryTextColor = Color.FromArgb(0x9E, 0x00, 0x00, 0x00), // TextFillColorSecondary
+        BorderColor = Color.FromArgb(0x0F, 0x00, 0x00, 0x00), // CardStroke
+        AccentColor = Color.FromRgb(0x00, 0x5F, 0xB8), // Fluent 蓝
+        DueColor = Color.FromRgb(0xC4, 0x2B, 0x1C), // SystemFillColorCritical
+        ActiveColor = Color.FromRgb(0x0F, 0x7B, 0x0F), // SystemFillColorSuccess
+        HoverColor = Color.FromArgb(0x09, 0x00, 0x00, 0x00), // SubtleFillSecondary
+        DueSoftColor = Color.FromRgb(0xFD, 0xE7, 0xE9), // CriticalBackground
     };
 
     public static ThemeColors Dark { get; } = new()
     {
-        BackgroundColor = Color.FromRgb(0x1B, 0x1B, 0x1B), // 近黑深灰
-        SurfaceColor = Color.FromArgb(0xF6, 0x2A, 0x2A, 0x2A), // 深灰卡片表面
-        ForegroundColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // 白主文本
-        SecondaryTextColor = Color.FromRgb(0x9E, 0x9E, 0x9E), // 次要文本
-        BorderColor = Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF), // 极淡描边
-        AccentColor = Color.FromRgb(0x5E, 0x5C, 0xE6), // 深靛蓝（深色版）
-        DueColor = Color.FromRgb(0xFF, 0x6B, 0x81), // 柔和红
-        ActiveColor = Color.FromRgb(0x6F, 0xC8, 0x73), // 柔和绿
-        HoverColor = Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF),
-        DueSoftColor = Color.FromArgb(0x26, 0xFF, 0x6B, 0x81), // 红色 15% 底
+        BackgroundColor = Color.FromRgb(0x20, 0x20, 0x20), // Mica 深色底
+        SurfaceColor = Color.FromArgb(0xF7, 0x2C, 0x2C, 0x2C), // 卡片
+        ForegroundColor = Color.FromRgb(0xFF, 0xFF, 0xFF), // TextFillColorPrimary
+        SecondaryTextColor = Color.FromArgb(0xC5, 0xFF, 0xFF, 0xFF), // TextFillColorSecondary
+        BorderColor = Color.FromArgb(0x15, 0xFF, 0xFF, 0xFF), // CardStroke
+        AccentColor = Color.FromRgb(0x60, 0xCD, 0xFF), // Fluent 蓝（深色版）
+        DueColor = Color.FromRgb(0xFF, 0x99, 0xA4), // SystemFillColorCritical
+        ActiveColor = Color.FromRgb(0x6C, 0xCB, 0x5F), // SystemFillColorSuccess
+        HoverColor = Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF), // SubtleFillSecondary
+        DueSoftColor = Color.FromRgb(0x44, 0x27, 0x26), // CriticalBackground
     };
+
+    /// <summary>喂给 WPF-UI 的强调色基色（Windows 默认蓝 #0078D4），它会按深浅主题自动派生明暗档</summary>
+    public static Color FluentAccentBase { get; } = Color.FromRgb(0x00, 0x78, 0xD4);
+
+    /// <summary>是否为深色主题</summary>
+    public bool IsDark => ReferenceEquals(this, Dark);
 }
