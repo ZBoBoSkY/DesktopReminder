@@ -15,7 +15,7 @@ namespace DesktopReminder.App.Views;
 /// </summary>
 public partial class IconWindow : ThemeWindow
 {
-    private const double CircleSize = 46;
+    private const double CircleSize = 54;
     private const double WindowMargin = 4;
 
     /// <summary>点击展开主界面</summary>

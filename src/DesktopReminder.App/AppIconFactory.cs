@@ -120,7 +120,7 @@ public static class AppIconFactory
 
         var figure = new PathFigure { StartPoint = start, IsClosed = false, IsFilled = false };
         figure.Segments.Add(new ArcSegment(
-            end, new Size(radius, radius), 0, largeArc, SweepDirection.Clockwise, true));
+            end, new System.Windows.Size(radius, radius), 0, largeArc, SweepDirection.Clockwise, true));
         var geometry = new PathGeometry();
         geometry.Figures.Add(figure);
         geometry.Freeze();

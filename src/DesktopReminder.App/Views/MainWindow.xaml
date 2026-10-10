@@ -140,7 +140,7 @@
             Background="{DynamicResource ThemeSurface}"
             BorderThickness="0">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Direction="270" Opacity="0.30" Color="#000000"/>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Direction="270" Opacity="0.15" Color="#000000"/>
         </Border.Effect>
         <!-- Grid 布局：进行中任务用 * 高度永远优先占空间，面板放下面，窗口再矮也先保进行中任务可见 -->
         <Grid>
@@ -161,7 +161,7 @@
                         <Ellipse Width="9" Height="9" Fill="{DynamicResource ThemeAccent}" Margin="0,0,9,0" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding TitleText}"
                                    Foreground="{DynamicResource ThemeForeground}"
-                                   FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                   FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
                         <Button Style="{StaticResource TitleButton}" Content="&#xE710;" ToolTip="新建任务"
@@ -377,45 +377,45 @@
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="1"/>
                                         </Grid.RowDefinitions>
-                                        <Grid Grid.Row="0" Height="50">
+                                        <Grid Grid.Row="0" Height="56">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="36"/>
+                                                <ColumnDefinition Width="40"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="76"/>
+                                                <ColumnDefinition Width="80"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
                                             <!-- 点击区（图标+名称/备注）：一键跳回该软件窗口；倒计时与按钮区独立不受影响 -->
-                                            <Grid Grid.Column="0" Grid.ColumnSpan="2" Height="50"
+                                            <Grid Grid.Column="0" Grid.ColumnSpan="2" Height="56"
                                                   MouseLeftButtonDown="TaskJump_MouseLeftButtonDown"
                                                   Cursor="Hand"
                                                   ToolTip="{Binding HasProcessName, Converter={StaticResource JumpHintConverter}}">
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="36"/>
+                                                    <ColumnDefinition Width="40"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
 
                                                 <!-- 图标列：真实软件图标（按 exe 取），取不到时显示首字母圆角块 -->
-                                                <Grid Grid.Column="0" Width="26" Height="26"
+                                                <Grid Grid.Column="0" Width="28" Height="28"
                                                       VerticalAlignment="Center" HorizontalAlignment="Center">
                                                     <Border CornerRadius="7" Background="{DynamicResource ThemeHover}">
-                                                        <TextBlock Text="{Binding InitialLetter}" FontSize="13" FontWeight="SemiBold"
+                                                        <TextBlock Text="{Binding InitialLetter}" FontSize="14" FontWeight="SemiBold"
                                                                    Foreground="{DynamicResource ThemeSecondaryText}"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
-                                                    <Image Source="{Binding AppIcon}" Width="24" Height="24" Stretch="Uniform"
+                                                    <Image Source="{Binding AppIcon}" Width="26" Height="26" Stretch="Uniform"
                                                            Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}"/>
                                                 </Grid>
 
-                                                <!-- 名称（14 SemiBold）+ 备注（12 次要色）：两级字体层级 -->
+                                                <!-- 名称（15 SemiBold）+ 备注（13 次要色）：两级字体层级 -->
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
                                                     <TextBlock Text="{Binding AppName}"
-                                                               Foreground="{DynamicResource ThemeForeground}" FontSize="14"
-                                                               FontWeight="SemiBold" LineHeight="22"
+                                                               Foreground="{DynamicResource ThemeForeground}" FontSize="15"
+                                                               FontWeight="SemiBold" LineHeight="23"
                                                                TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding Note}"
-                                                               Foreground="{DynamicResource ThemeSecondaryText}" FontSize="12"
-                                                               LineHeight="18"
+                                                               Foreground="{DynamicResource ThemeSecondaryText}" FontSize="13"
+                                                               LineHeight="19"
                                                                TextTrimming="CharacterEllipsis"
                                                                Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}"/>
                                                 </StackPanel>
@@ -424,7 +424,7 @@
                                             <!-- 倒计时（等宽数字，双击新建，冻结需求） -->
                                             <!-- 颜色用 DynamicResource + DataTrigger：主题切换自动刷新 -->
                                             <TextBlock Grid.Column="2" Text="{Binding CountdownText}"
-                                                       FontSize="14" FontWeight="SemiBold"
+                                                       FontSize="15" FontWeight="SemiBold"
                                                        FontFamily="Consolas, Microsoft YaHei"
                                                        VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"
                                                        MouseLeftButtonDown="Countdown_MouseLeftButtonDown">
@@ -472,7 +472,7 @@
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Cursor="Hand">
                         <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                   FontSize="36" HorizontalAlignment="Center"
+                                   FontSize="44" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource ThemeSecondaryText}" Opacity="0.4">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
